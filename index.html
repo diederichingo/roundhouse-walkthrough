@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1b1916">
+  <title>Els’s roundhouse — Option B walkthrough</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="loading">Loading the roundhouse…</div>
+  <canvas id="c"></canvas>
+  <div id="ui">
+    <header class="top">
+      <h1>Els’s roundhouse, Penamacor
+        <span>Option B walkthrough · v1d · not for construction</span>
+      </h1>
+      <div class="modes" role="group" aria-label="View mode">
+        <button id="btnOrbit" aria-pressed="true">Orbit</button>
+        <button id="btnWalk" aria-pressed="false">Walk</button>
+      </div>
+      <div class="tools">
+        <button class="tool clash" id="btnClash" aria-pressed="false">Clashes</button>
+        <button class="tool" id="btnHeights" aria-pressed="false">Heights</button>
+        <button class="tool" id="btnMeasure" aria-pressed="false">Tape</button>
+      </div>
+    </header>
+    <button id="togglePanel" aria-label="Toggle panel">i</button>
+    <aside id="panel">
+      <h2>Sun · Penamacor</h2>
+      <div class="row">
+        <div>
+          <label for="sunDate">Date</label>
+          <input id="sunDate" type="date" value="2026-11-25">
+        </div>
+        <div>
+          <label for="sunTime">Time (Europe/Lisbon)</label>
+          <input id="sunTime" type="time" value="14:00">
+        </div>
+      </div>
+      <label for="sunSlider">Time of day</label>
+      <input id="sunSlider" type="range" min="0" max="1439" value="840">
+      <div id="sunReadout">—</div>
+
+      <p id="raiseNote" class="raise-note">Roof raised 200 mm (Roundhouse bot, final, 25 Nov 2026).</p>
+
+      <h2>Clash checker</h2>
+      <p style="margin:0 0 6px;font-size:12px;color:var(--muted)">Turn clashes on, then fly to a view. Each view frames one clash with labels on screen. Clashes are recomputed from the model.</p>
+      <ul id="clashList"></ul>
+      <div id="presets"></div>
+
+      <h2>Assumed</h2>
+      <ol id="assumptions">
+        <li>House and utility walls modelled as 350 mm cob, centred on the centreline (thickness is not dimensioned on the drawings).</li>
+        <li>Curved inner wall 250 mm thick.</li>
+        <li>Counter 900 mm high (undecided — assumed); kitchen window 900 × 1 100 at 1 200–2 300.</li>
+        <li>FFL 180 mm above grade (provisional in the plan).</li>
+        <li>Sandwich panels 60 mm thick; window frames 70 mm deep.</li>
+        <li>Level site; no solar array, gutters or flashings.</li>
+        <li>Interior partitions 100 mm thick × 2 200 mm high; bed 450 mm; fixtures 400 mm.</li>
+        <li>Garden door leaves split 56 / 44, opening in; back-door leaf 70 % of the clear opening, opening out.</li>
+        <li>Windows are fixed glass (opening type not drawn).</li>
+        <li>Furniture plan from Els’s sketch (drawings: not to scale).</li>
+        <li>Sun: 40.17° N, 7.17° W, Europe/Lisbon clock time. Azimuth is from north, clockwise, with −Z as north.</li>
+        <li>World axes: +X east, +Y up, −Z north (so a view looking north has east on the right).</li>
+        <li>Eye height 1.70 m; collision radius 0.22 m.</li>
+      </ol>
+    </aside>
+    <div id="hudLabels"></div>
+    <div id="measureHud">Tap two points</div>
+    <div id="compass" title="North. The rose turns with the view: N points toward world north.">
+      <div class="compass-bezel">
+        <div id="compassRose" class="compass-rose">
+          <span class="tick n">N</span>
+          <span class="tick e">E</span>
+          <span class="tick s">S</span>
+          <span class="tick w">W</span>
+        </div>
+        <div class="compass-view" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div id="hint">Orbit: drag to look, scroll or pinch to zoom. Walk: WASD and mouse on a computer; joystick and drag to look on a phone. Tap a door to open it.</div>
+    <div id="joy"><div class="knob"></div></div>
+  </div>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js",
+      "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js"
+    }
+  }
+  </script>
+  <script type="module" src="js/app.js?v=13"></script>
+</body>
+</html>
