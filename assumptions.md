@@ -123,3 +123,11 @@ Walls are no longer solid cob. Source: `drawings_optionB/wall_buildup_proposal.m
 ## v1k — living room is couch and table only
 
 The Eames lounge chair was removed. The living room is only the two-seat couch and the coffee table. No other chair or armchair remains in the living area (Els’s furniture sketch had none). Everything else from v1j is unchanged.
+
+The living-room Eames lounge chair was already removed in the first v1k commit. This follow-up adds the interior ceiling (CHECK / unconfirmed), from `drawings_optionB/wall_and_roof_buildup_proposal.md`.
+
+- 150 mm insulation under the green sandwich panel, between the purlins, interiors only (house and utility). Not on the outdoor overhangs or the open east covering.
+- 50 × 200 ceiling joists running N–S between the purlins, flush with the purlin soffit, at 609 mm centres in the house (16 lines, bays 1–6, plus short lookouts in the eave caps) and 550 mm in the utility (5 lines, bays 2–3).
+- T&G (~20 mm) running E–W, soffit 20 mm below the purlin soffit: about **2 905 mm** AFF at the south inner face, **3 504 mm** at the centre, **4 118 mm** at the north wall centreline (the inner face at y = +4 875 is **4 102 mm**). Stops 20 mm short of the upper closing and is not fixed to the wall.
+- Main beams stay fully visible below the ceiling. 240 mm of beam hangs below the purlin soffit; with the 20 mm T&G that is 220 mm of visible beam below the ceiling soffit at the south wall CL (beam soffit 2 670 mm).
+- Insulation product in the roof: wood-fibre batts or unfaced Volcalis preferred (CHECK). Joist hangers / screw fixings: Connections CHECK. T&G species / finish: Joshua.

@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1k';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1k2';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -99,6 +99,31 @@ function noiseTexture(size, c0, c1, grain) {
   return tex;
 }
 
+function tngTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 128;
+  const ctx = c.getContext('2d');
+  const boards = 8;
+  const h = c.height / boards;
+  for (let i = 0; i < boards; i++) {
+    const shade = i % 2 ? '#d2ae7a' : '#c8a06e';
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, i * h, c.width, h);
+    ctx.fillStyle = 'rgba(80,50,24,0.35)';
+    ctx.fillRect(0, (i + 1) * h - 2, c.width, 2);
+    // faint grain
+    ctx.fillStyle = 'rgba(60,35,16,0.08)';
+    for (let k = 0; k < 20; k++) {
+      ctx.fillRect(Math.random() * c.width, i * h + Math.random() * h, 40 + Math.random() * 80, 1);
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function stripeTexture() {
   const c = document.createElement('canvas');
   c.width = 256; c.height = 64;
@@ -130,6 +155,7 @@ function makeMaterials() {
   textures.ground = noiseTexture(128, [120, 130, 88], [90, 108, 70], 0.8);
   textures.ground.repeat.set(20, 20);
   textures.roof = stripeTexture();
+  textures.tng = tngTexture();
 
   materials.cob = new THREE.MeshStandardMaterial({
     map: textures.cob, color: 0xd8c09a, roughness: 0.95, metalness: 0.0
@@ -140,6 +166,10 @@ function makeMaterials() {
   // Insulation in the 150 mm frame (cork-like; product still CHECK).
   materials.insulation = new THREE.MeshStandardMaterial({
     color: 0xc4a56a, roughness: 0.92, metalness: 0.0
+  });
+  materials.tng = new THREE.MeshStandardMaterial({
+    map: textures.tng, color: 0xe0c396, roughness: 0.72, metalness: 0.0,
+    side: THREE.DoubleSide
   });
   materials.timber = new THREE.MeshStandardMaterial({
     map: textures.timber, color: 0xd2a878, roughness: 0.68, metalness: 0.0
@@ -1004,6 +1034,227 @@ function buildModel() {
   const st = G.extStrip;
   addBox(houseGroup, mm(st.w), 0.08, mm(st.y1-st.y0), materials.stone, mm(st.x), GRADE + 0.02, 0);
 
+  // Interior ceiling (CHECK / unconfirmed): 150 mm insulation under the green panel
+  // between the purlins, 50 × 200 joists N–S flush with the purlin soffit at ~600 c/c,
+  // T&G running E–W underneath. House and utility interiors only — not the overhangs.
+  // 20 mm slip at the upper closing; main beams stay fully visible below.
+  const TNG_T = 0.020;
+  const ROOF_INS_T = 0.150;
+  const JOIST_W = 0.050, JOIST_D = 0.200;
+  const CEIL_GAP = 0.020;
+  const rCeil = rIn - CEIL_GAP;
+  const BEAM_HALF = 0.110;
+  const JOIST_CC = 0.609;
+  function tngSoffitFFL(yNorth) { return coverFFL(yNorth) - 0.200 - TNG_T; }
+  const yTng0 = tngSoffitFFL(0); // 3.5039 at centre
+  const yInsTop0 = coverFFL(0) - 0.002;
+  const purlinYs = G.purlin.ys.map(mm);
+
+  function setSlopedFromShape(geo, yAtZ0) {
+    const pos = geo.attributes.position;
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), z = pos.getY(i);
+      pos.setXYZ(i, x, yAtZ0 - z * TAN7, z);
+      if (uv) uv.setXY(i, x / 2.0, z / 0.12);
+    }
+    pos.needsUpdate = true;
+    if (uv) uv.needsUpdate = true;
+    geo.computeVertexNormals();
+  }
+
+  function meshFromLoop(loop, yAtZ0, mat) {
+    if (!loop || loop.length < 3) return null;
+    const shape = new THREE.Shape();
+    loop.forEach((p, i) => { if (i === 0) shape.moveTo(p.x, p.z); else shape.lineTo(p.x, p.z); });
+    shape.closePath();
+    const geo = new THREE.ShapeGeometry(shape, 2);
+    setSlopedFromShape(geo, yAtZ0);
+    const m = new THREE.Mesh(geo, mat);
+    m.castShadow = false;
+    m.receiveShadow = true;
+    houseGroup.add(m);
+    return m;
+  }
+
+  function prismFromLoop(loop, yAtZ0Top, thick, mat) {
+    if (!loop || loop.length < 3) return null;
+    const contour = loop.map((p) => new THREE.Vector2(p.x, p.z));
+    let tris;
+    try { tris = THREE.ShapeUtils.triangulateShape(contour, []); }
+    catch (e) { return null; }
+    const nrm = new THREE.Vector3(0, 1, TAN7).normalize();
+    const positions = [], indices = [];
+    const n = loop.length;
+    for (const p of loop) {
+      const yTop = yAtZ0Top - p.z * TAN7;
+      positions.push(p.x, yTop, p.z);
+    }
+    for (const p of loop) {
+      const yTop = yAtZ0Top - p.z * TAN7;
+      positions.push(p.x - nrm.x * thick, yTop - nrm.y * thick, p.z - nrm.z * thick);
+    }
+    for (const t of tris) indices.push(t[0], t[1], t[2]);
+    for (const t of tris) indices.push(n + t[0], n + t[2], n + t[1]);
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const a = i, b = j, c = n + j, d = n + i;
+      indices.push(a, b, c, a, c, d);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, mat);
+    m.castShadow = false;
+    m.receiveShadow = true;
+    houseGroup.add(m);
+    return m;
+  }
+
+  function houseBayPolys(zLo, zHi) {
+    const z0 = Math.max(zLo, -rCeil), z1 = Math.min(zHi, rCeil);
+    if (z1 - z0 < 0.04) return [];
+    const n = Math.max(6, Math.ceil((z1 - z0) / 0.12));
+    function side(sign) {
+      const inner = [], outer = [];
+      for (let i = 0; i <= n; i++) {
+        const z = z0 + (z1 - z0) * (i / n);
+        const xC = Math.sqrt(Math.max(0, rCeil * rCeil - z * z));
+        if (xC <= BEAM_HALF + 0.005) continue;
+        inner.push({ x: sign * BEAM_HALF, z });
+        outer.push({ x: sign * xC, z });
+      }
+      if (outer.length < 2) return null;
+      return sign > 0 ? inner.concat(outer.reverse()) : outer.concat(inner.reverse());
+    }
+    return [side(-1), side(+1)].filter(Boolean);
+  }
+
+  function rectLoop(x0, z0, x1, z1) {
+    const xa = Math.min(x0, x1), xb = Math.max(x0, x1);
+    const za = Math.min(z0, z1), zb = Math.max(z0, z1);
+    if (xb - xa < 0.04 || zb - za < 0.04) return null;
+    return [{ x: xa, z: za }, { x: xb, z: za }, { x: xb, z: zb }, { x: xa, z: zb }];
+  }
+
+  // House T&G: circle minus the centre-beam slot, soffit = purlin soffit − 20 mm.
+  const houseShape = new THREE.Shape();
+  const nArc = 96;
+  for (let i = 0; i <= nArc; i++) {
+    const th = (i / nArc) * Math.PI * 2;
+    const x = rCeil * Math.sin(th), z = rCeil * Math.cos(th);
+    if (i === 0) houseShape.moveTo(x, z); else houseShape.lineTo(x, z);
+  }
+  houseShape.closePath();
+  const beamHole = new THREE.Path();
+  const hz = rCeil + 0.02;
+  beamHole.moveTo(-BEAM_HALF, -hz);
+  beamHole.lineTo(BEAM_HALF, -hz);
+  beamHole.lineTo(BEAM_HALF, hz);
+  beamHole.lineTo(-BEAM_HALF, hz);
+  beamHole.closePath();
+  houseShape.holes.push(beamHole);
+  const tngHouse = new THREE.ShapeGeometry(houseShape, 2);
+  setSlopedFromShape(tngHouse, yTng0);
+  const tngHouseMesh = new THREE.Mesh(tngHouse, materials.tng);
+  tngHouseMesh.castShadow = false;
+  tngHouseMesh.receiveShadow = true;
+  tngHouseMesh.userData.ceiling = true;
+  houseGroup.add(tngHouseMesh);
+
+  // Utility T&G, inset 20 mm from the inner faces.
+  const uCeilX0 = uInX0 + CEIL_GAP, uCeilX1 = uInX1 - CEIL_GAP;
+  const uCeilZ0 = uInZ0 + CEIL_GAP, uCeilZ1 = uInZ1 - CEIL_GAP;
+  const uLoop = rectLoop(uCeilX0, uCeilZ0, uCeilX1, uCeilZ1);
+  const tngUtil = meshFromLoop(uLoop, yTng0, materials.tng);
+  if (tngUtil) tngUtil.userData.ceiling = true;
+
+  // 150 mm insulation under the panel, between the purlins, interiors only.
+  for (let i = 0; i < purlinYs.length - 1; i++) {
+    const yA = purlinYs[i], yB = purlinYs[i + 1];
+    const zLo = Math.min(-yA, -yB) + 0.075; // keep clear of the 150 mm purlin
+    const zHi = Math.max(-yA, -yB) - 0.075;
+    houseBayPolys(zLo, zHi).forEach((loop) => prismFromLoop(loop, yInsTop0, ROOF_INS_T, materials.insulation));
+    const uPoly = rectLoop(
+      uCeilX0, Math.max(zLo, uCeilZ0),
+      uCeilX1, Math.min(zHi, uCeilZ1)
+    );
+    if (uPoly) prismFromLoop(uPoly, yInsTop0, ROOF_INS_T, materials.insulation);
+  }
+
+  function addCeilingJoist(x, yS, yN) {
+    let z0 = -yS, z1 = -yN;
+    if (z0 > z1) { const t = z0; z0 = z1; z1 = t; }
+    const inUtil = x > uCeilX0 && x < uCeilX1;
+    const zLim = Math.sqrt(Math.max(0, rCeil * rCeil - x * x));
+    let a = z0, b = z1;
+    if (Math.abs(x) < rCeil) {
+      a = Math.max(a, -zLim);
+      b = Math.min(b, zLim);
+    } else if (inUtil) {
+      a = Math.max(a, uCeilZ0);
+      b = Math.min(b, uCeilZ1);
+    } else {
+      return;
+    }
+    if (inUtil) {
+      // joist may also run over the utility rectangle (east of the house).
+      if (x > rCeil) { a = Math.max(z0, uCeilZ0); b = Math.min(z1, uCeilZ1); }
+    }
+    // Skip the centre-beam slot
+    if (Math.abs(x) < BEAM_HALF + JOIST_W / 2) return;
+    if (b - a < 0.05) return;
+    const midZ = (a + b) / 2;
+    const planLen = b - a;
+    const slopeLen = planLen / Math.cos(7 * DEG);
+    const sof = tngSoffitFFL(-midZ) + TNG_T; // flush with purlin soffit
+    const m = addBox(houseGroup, JOIST_W, JOIST_D, slopeLen, materials.timber,
+      x, sof + (JOIST_D / 2) * Math.cos(7 * DEG), midZ);
+    m.rotation.x = 7 * DEG;
+    m.castShadow = false;
+    m.userData.ceilingJoist = true;
+  }
+
+  // House: 16 lines at 609 mm, purlin bays 1–6, plus short lookouts in eave caps 0 and 7.
+  const joistXs = [];
+  for (let i = 0; i < 16; i++) joistXs.push(-7.5 * JOIST_CC + i * JOIST_CC);
+  for (const x of joistXs) {
+    for (let i = 1; i <= 6; i++) addCeilingJoist(x, purlinYs[i], purlinYs[i + 1]);
+    addCeilingJoist(x, purlinYs[0], purlinYs[1]); // south eave cap lookouts (clipped to the circle)
+    addCeilingJoist(x, purlinYs[7], purlinYs[8]);
+  }
+  // Utility: 5 lines at 550 mm, bays 2–3 (y −3000 to 0).
+  const uJoistMidX = (uCeilX0 + uCeilX1) / 2;
+  for (let i = -2; i <= 2; i++) {
+    const x = uJoistMidX + i * 0.550;
+    addCeilingJoist(x, purlinYs[2], purlinYs[3]);
+    addCeilingJoist(x, purlinYs[3], purlinYs[4]);
+  }
+  // Edge trimmers along the inner wall in the N/S caps (on the roof structure, not fixed to the wall).
+  function addTrimArc(zSign) {
+    const zPur = zSign * 4.500;
+    const pts = [];
+    for (let i = 0; i <= 24; i++) {
+      const x = -1.82 + (3.64 * i / 24);
+      const zEdge = zSign * Math.sqrt(Math.max(0, rCeil * rCeil - x * x));
+      // only where the eave cap exists (edge is south/north of the first interior purlin)
+      if (zSign > 0 && zEdge > zPur + 0.04) pts.push(new THREE.Vector3(x, tngSoffitFFL(-zEdge) + TNG_T + 0.025, zEdge));
+      if (zSign < 0 && zEdge < zPur - 0.04) pts.push(new THREE.Vector3(x, tngSoffitFFL(-zEdge) + TNG_T + 0.025, zEdge));
+    }
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const len = Math.hypot(b.x - a.x, b.z - a.z);
+      if (len < 0.04) continue;
+      const mid = a.clone().add(b).multiplyScalar(0.5);
+      const m = addBox(houseGroup, len, 0.050, 0.050, materials.timber, mid.x, mid.y, mid.z);
+      m.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x);
+      m.castShadow = false;
+    }
+  }
+  addTrimArc(+1);
+  addTrimArc(-1);
+
   // Curved inner wall
   const iw = G.innerWall;
   const arcPts = iw.wallPoly.map(([x, y]) => new THREE.Vector3(mm(x), 0.020, wz(mm(y))));
@@ -1330,6 +1581,93 @@ function buildModel() {
     };
   })();
 
+  computedClashes.cleared.ceiling = (function () {
+    const sInner = tngSoffitFFL(-rIn);
+    const sCL = tngSoffitFFL(-5);
+    const centre = tngSoffitFFL(0);
+    const nInner = tngSoffitFFL(rIn);
+    const nCL = tngSoffitFFL(5);
+    const closingTopS = coverFFL(-5) - 0.020;
+    const beamSofS = soffitFFL(-5);
+    const visibleBeamS = sCL - beamSofS; // at wall CL; T&G is 20 mm below purlin soffit
+    const visibleBeamAtPurlin = (coverFFL(-5) - 0.200) - beamSofS; // 240 mm
+    let iwMin = null;
+    for (const p of arcPts) {
+      const sof = tngSoffitFFL(-p.z);
+      const gap = sof - IW_TOP;
+      if (iwMin == null || gap < iwMin.gap) iwMin = { soffit: sof, gap, y: -p.z, wallTop: IW_TOP };
+    }
+    const braceHits = [];
+    braceMeshes.forEach((m) => {
+      const b = m.userData.brace;
+      if (!b) return;
+      const box = new THREE.Box3().setFromObject(m);
+      const px = m.position.x, pz = m.position.z;
+      const rho = Math.hypot(px, pz);
+      const tng = tngSoffitFFL(-pz);
+      const top = box.max.y;
+      const clear = tng - top;
+      const interior = rho <= rCeil + 0.15;
+      const clash = interior && clear < -0.005;
+      braceHits.push({
+        post: b.post, dir: b.dir, side: b.side,
+        top, tng, clear, rho, interior, clash
+      });
+    });
+    const it = window.__interior;
+    const figures = [];
+    if (it && it.kitchenPerson) {
+      const k = it.kitchenPerson;
+      const sof = tngSoffitFFL(-k.z);
+      figures.push({ who: 'kitchen 1.80 m', soffit: sof, gap: sof - k.height });
+    }
+    if (it && it.bathroomPerson) {
+      const bp = it.bathroomPerson;
+      const sof = tngSoffitFFL(-bp.z);
+      figures.push({ who: 'bathroom 1.70 m', soffit: sof, gap: sof - bp.height });
+    }
+    const utilS = tngSoffitFFL(-2.600);
+    const utilN = tngSoffitFFL(-0.600);
+    const hits = braceHits.filter((h) => h.clash);
+    return {
+      unconfirmed: true,
+      interiorsOnly: true,
+      insulation: ROOF_INS_T,
+      joists: '50 × 200, N–S, flush with purlin soffit, 609 mm c/c house / 550 mm utility',
+      tng: TNG_T,
+      soffits: { sInner, sCL, centre, nInner, nCL },
+      proposalSoffits: { sInner: 2.905, centre: 3.504, nWall: 4.118 },
+      headroomMin: sInner,
+      headroomAbove2m: sInner - 2.0,
+      innerWall: iwMin,
+      upperClosing: {
+        topAtS: closingTopS,
+        ceilingAtSInner: sInner,
+        visibleClosingBelowCeiling: sInner - HEAD_TOP,
+        planSlip: CEIL_GAP,
+        note: 'T&G stops 20 mm short of the upper closing and is not fixed to the wall. At the south inner face the ceiling is below the closing top; ~430 mm of closing remains visible under the ceiling (2 905 − 2 475).'
+      },
+      beams: {
+        soffitAtS: beamSofS,
+        visibleBelowTngAtSCL: visibleBeamS,
+        visibleBelowPurlinSoffit: visibleBeamAtPurlin,
+        stayFullyVisible: visibleBeamS > 0.20,
+        note: 'Main-beam soffits are 240 mm below the purlin soffit. T&G is 20 mm below the purlin soffit, so 220 mm of beam stays visible below the ceiling at the south wall CL (soffit 2 670 mm). The proposal’s “240 mm below the ceiling” is the purlin-soffit figure; the extra 20 mm of T&G is flagged.'
+      },
+      braces: {
+        clashes: hits,
+        minClearInterior: braceHits.filter((h) => h.interior).reduce((m, h) => Math.min(m, h.clear), 99),
+        items: braceHits
+      },
+      utility: {
+        tngAtSouth: utilS, tngAtNorth: utilN,
+        gapAbovePlateS: utilS - plateTop, gapAbovePlateN: utilN - plateTop,
+        plateTop
+      },
+      figures
+    };
+  })();
+
   addCompassRose(houseGroup, GRADE);
 
   return { braceMeshes, counterBox, rIn, rOut, openings };
@@ -1604,6 +1942,9 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   addHud('Window frame 70 mm in the 150 mm frame', -3.4, 1.55, 3.6, ['heights']);
   addHud('Inner wall 200 mm × 2 355 mm (unconfirmed)', -0.15, 1.35, 2.05, ['heights']);
   addHud('Upper closing 250 mm sandwich (unconfirmed)', 0.55, 2.85, 5.20, ['heights']);
+  addHud('T&G soffit S inner 2 905 mm (unconfirmed)', 0.35, 2.95, 4.55, ['heights']);
+  addHud('T&G soffit centre 3 504 mm (unconfirmed)', -1.05, 3.55, 0.25, ['heights']);
+  addHud('T&G soffit N wall 4 118 mm (unconfirmed)', 0.35, 4.16, -5.05, ['heights']);
   addHud('Door head 2 375 mm', -5.3, 2.40, -0.3, ['heights']);
   addHud('Head plate top 2 475 mm', -5.3, 2.55, -0.9, ['heights']);
   addHud(`Utility plate ${fmtMm(plateTop)} mm`, 6.6, 2.50, 1.15, ['heights']);

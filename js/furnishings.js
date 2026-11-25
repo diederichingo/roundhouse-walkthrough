@@ -310,5 +310,9 @@ export const VIEW_CAMS = {
   'post-coverage': {
     label: 'Post coverage',
     cam: { x: 1.15, y: 1.40, z: 5.65, tx: 0.05, ty: 1.15, tz: 5.02 }
+  },
+  ceiling: {
+    label: 'Ceiling',
+    cam: { x: 1.20, y: 2.30, z: 3.40, tx: 0.00, ty: 2.92, tz: 4.50 }
   }
 };
