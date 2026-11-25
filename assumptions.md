@@ -6,7 +6,7 @@ Every item below is an assumption used in the 3D model. Confirmed dimensions com
 
 - House, utility and the kitchen under-sill walls are a **250 mm sandwich**: 150 mm timber frame with insulation and up to 50 mm cob/plaster skin each face, centred on the centreline, on the 400 mm plinth (75 mm reveal each side). Confirmed by Roundhouse Control, 25 Nov 2026. The outer finish is still called cob/plaster.
 - Curved inner wall: **200 mm × 2 355 mm (unconfirmed / CHECK)** — 100 mm frame + 50 mm skin each face, flush with the 200 mm plinth, from plinth top (20 mm AFF) to the outer head-plate soffit (2 375 mm AFF). **100 × 50 sole on DPC**, **100 × 50 head** (closing plate, not tied to the roof), **100 × 100 × 2 355 mm** full-height end post on the plinth. Intermediate 100 mm studs are not added (battens do that work; CHECK if Joshua adds 100 × 50 studs later). Interior partitions that are not this wall stay 2 200 mm.
-- Kitchen window: **900 mm wide × 1 100 mm high**, sill **1 200** (size and sill still assumed), against the N post, above the counter. The window top is the confirmed **2 300 mm** (all window tops at one height).
+- Kitchen window: **900 mm wide × 1 100 mm high**, sill **1 200** (size and sill still assumed), against the N post, above the counter. The window top is the confirmed **2 300 mm**. The kitchen sill rail top is the confirmed **1 185 mm AFF** (100 mm rail; cob under the rail is 715 mm from the sole).
 - Finished floor level: **180 mm above grade** (drawn provisional in the plan).
 - Green sandwich roof panel thickness: **60 mm**, measured normal to the 7° plane.
 - Window / door frame depth: **70 mm**.
@@ -131,3 +131,10 @@ The living-room Eames lounge chair was already removed in the first v1k commit. 
 - T&G (~20 mm) running E–W, soffit 20 mm below the purlin soffit: about **2 905 mm** AFF at the south inner face, **3 504 mm** at the centre, **4 118 mm** at the north wall centreline (the inner face at y = +4 875 is **4 102 mm**). Stops 20 mm short of the upper closing and is not fixed to the wall.
 - Main beams stay fully visible below the ceiling. 240 mm of beam hangs below the purlin soffit; with the 20 mm T&G that is 220 mm of visible beam below the ceiling soffit at the south wall CL (beam soffit 2 670 mm).
 - Insulation product in the roof: wood-fibre batts or unfaced Volcalis preferred (CHECK). Joist hangers / screw fixings: Connections CHECK. T&G species / finish: Joshua.
+
+
+## v1l — Roundhouse answers to the v1j clash items
+
+- Kitchen sill rail top is **1 185 mm AFF** (confirmed). The window sill (frame bottom) stays at the assumed **1 200 mm**. The 100 mm rail sits in the 150 mm frame (bottom 1 085 mm); cob under the rail is 715 mm from the sole top (370 mm). A 15 mm intended fit gap (shims + sill tape) sits between the rail and the frame, the same as the other windows.
+- The 15 mm gap between the 15 mm packer (top 385 mm) and the 400 mm sill is an **intended fit gap** (`FIT_GAP`, shims + weather/air seal and sill tape on the packer). It is not a mismatch, and the packer is not thickened to 30 mm.
+- The cob skin **thins or stops at the posts and knee braces**. The 200 mm posts stay 25 mm proud of the 150 mm frame; the timber is left **exposed** (or lime-washed), not wrapped in cob. Knee braces are not wrapped either (trapped moisture, awkward drying).

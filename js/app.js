@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1k. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1l. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1k2';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1l';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -173,6 +173,10 @@ function makeMaterials() {
   });
   materials.timber = new THREE.MeshStandardMaterial({
     map: textures.timber, color: 0xd2a878, roughness: 0.68, metalness: 0.0
+  });
+  // Intended 15 mm fit gap fill: shims + sill tape (not an open void).
+  materials.sillTape = new THREE.MeshStandardMaterial({
+    color: 0x3a342c, roughness: 0.85, metalness: 0.0
   });
   materials.stone = new THREE.MeshStandardMaterial({
     map: textures.stone, color: 0xb7b3ab, roughness: 0.9, metalness: 0.0
@@ -455,10 +459,14 @@ function buildModel() {
   const WIN_HEAD = 2.300;
   const HEAD_SOF = 2.375;
   const HEAD_TOP = 2.475;
-  const K_SILL = 1.200;
+  const K_SILL = 1.200;       // window frame bottom (size and sill still assumed)
+  const K_RAIL_TOP = 1.185;   // kitchen sill rail top AFF (Roundhouse answer to v1j)
+  const K_RAIL_H = 0.100;
+  const K_RAIL_BOT = K_RAIL_TOP - K_RAIL_H; // 1.085; cob under the rail = 715 mm from the sole
   const CURVE_T = 0.200; // inner wall, UNCONFIRMED (proposal CHECK: 100 mm frame + 2×50 mm skins)
-  const PACKER = 0.015;  // proposal: 15 mm packer on the sole under windows with no under-sill
-  // Didactic section just east of the S ring post, so the sandwich and 25 mm post cover can be read.
+  const PACKER = 0.015;  // 15 mm packer on the sole under windows with no under-sill
+  const FIT_GAP = 0.015; // intended fit gap (shims + sill tape) each side of the unit
+  // Didactic section just east of the S ring post, so the sandwich and the exposed post can be read.
   const SECTION_A0 = 1.20, SECTION_A1 = 3.60;
 
   function rangesExceptSection(a0, a1) {
@@ -570,8 +578,12 @@ function buildModel() {
   // US member is 150 × 50 (was 100 × 50), 150 mm across the wall, flush with the head plate.
   const US_SPACING = 0.600;
   segs.forEach((s) => {
-    const a0 = s.th0;
-    const a1 = s.th1;
+    // Skins stop at the posts so the timber stays exposed (or lime-washed).
+    const v0 = verts.find((v) => Math.abs(v.theta - s.th0) < 1e-4);
+    const v1 = verts.find((v) => Math.abs(v.theta - s.th1) < 1e-4) || (s.th1 >= 359.9 ? verts[0] : null);
+    const a0 = s.th0 + (v0 && v0.member === 'post' ? memberHalfDeg(v0) : 0);
+    const a1 = s.th1 - (v1 && v1.member === 'post' ? memberHalfDeg(v1) : 0);
+    if (a1 <= a0 + 0.05) return;
     const n = Math.max(3, Math.ceil((a1 - a0) / 8));
     for (let i = 0; i < n; i++) {
       const t0 = a0 + (a1 - a0) * (i / n);
@@ -623,12 +635,22 @@ function buildModel() {
     if (kind === 'cob') {
       sandwichRing(a0, a1, PL_TOP, HEAD_SOF, 8);
     } else if (kind === 'big' || kind === 'small') {
-      // No under-sill sandwich (proposal): sole + 15 mm packer only; 13 big + 2 small stay as drawn.
+      // No under-sill sandwich: sole + 15 mm packer, then the intended 15 mm fit gap
+      // (shims + sill tape), then the 400 mm sill. Not a mismatch.
       houseGroup.add(ringBand(rFrameIn, rFrameOut, a0, a1, SOLE_TOP, SOLE_TOP + PACKER, materials.timber, 4));
+      houseGroup.add(ringBand(rIn, rOut, a0, a1, SOLE_TOP + PACKER, SILL, materials.sillTape, 4));
       sandwichRing(a0, a1, WIN_HEAD, HEAD_SOF, 4);
       addWindow(a0, a1, SILL, WIN_HEAD, kind === 'big' ? 1.27 : 0.72, 1.90);
     } else if (kind === 'kitchen') {
-      sandwichRing(a0, a1, PL_TOP, K_SILL, 6);
+      // Cob under the 100 mm rail = 715 mm (sole top 370 to rail bottom 1 085).
+      // Rail top 1 185 AFF; window sill (frame bottom) stays 1 200; 15 mm fit gap.
+      sandwichRing(a0, a1, PL_TOP, K_RAIL_BOT, 6);
+      for (const [b0, b1] of rangesExceptSection(a0, a1)) {
+        houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, K_RAIL_BOT, K_RAIL_TOP, materials.cob, 6));
+        houseGroup.add(ringBand(rIn, rFrameIn, b0, b1, K_RAIL_BOT, K_RAIL_TOP, materials.cobInner, 6));
+      }
+      houseGroup.add(ringBand(R - 0.075, R + 0.075, a0, a1, K_RAIL_BOT, K_RAIL_TOP, materials.timber, 6));
+      houseGroup.add(ringBand(rIn, rOut, a0, a1, K_RAIL_TOP, K_SILL, materials.sillTape, 4));
       sandwichRing(a0, a1, WIN_HEAD, HEAD_SOF, 4);
       addWindow(a0, a1, K_SILL, WIN_HEAD, 0.90, 1.10);
     } else if (kind === 'gardendoor' || kind === 'backdoor') {
@@ -1389,7 +1411,8 @@ function buildModel() {
       return { x, z: northZ, rho, gap: rIn - rho };
     });
     const apron = K_SILL - 0.900;
-    // Knee braces leave ring posts through the 25 mm cob that covers the inner post face.
+    // Cob skin thins or stops at the posts and knee braces; the timber stays exposed
+    // (or lime-washed). Braces are not wrapped in cob.
     const ringNames = new Set(['S ring', 'E ring', 'N ring', 'W ring']);
     const braceSkin = [];
     braceMeshes.forEach((m) => {
@@ -1399,7 +1422,7 @@ function buildModel() {
         post: b.post,
         dir: b.dir,
         side: b.side,
-        note: 'passes through the 25 mm cob over the inner post face (local skin stop, not a structural clash)'
+        note: 'cob skin stops at the post and brace; timber remains exposed (or lime-washed), not a structural clash'
       });
     });
     const it = window.__interior;
@@ -1553,7 +1576,24 @@ function buildModel() {
         beamAbove: iwBeam,
         bracesNear: iwBraces
       },
-      kitchen: { sillAssumed: K_SILL, apron, counterGaps },
+      kitchen: {
+        sillAssumed: K_SILL,
+        railTop: K_RAIL_TOP,
+        railHeight: K_RAIL_H,
+        cobUnderRail: K_RAIL_BOT - SOLE_TOP,
+        fitGap: FIT_GAP,
+        apron,
+        counterGaps
+      },
+      packerGap: {
+        packer: PACKER,
+        soleTop: SOLE_TOP,
+        packerTop: SOLE_TOP + PACKER,
+        sill: SILL,
+        fitGap: FIT_GAP,
+        intended: true,
+        note: '15 mm packer on the sole (top 385 mm); 15 mm intended fit gap (shims + sill tape) to the 400 mm sill. Not a mismatch.'
+      },
       furniture: { couchToInnerWall: couchGap, bathroomToHouseInner: bathOuter },
       headPlate: { width: 0.150, skinProjectsPast: SKIN_T, skinsContinueToRoof: true, byDesign: true, coldBand: false },
       braceThroughInnerSkin: { count: braceSkin.length, items: braceSkin },
@@ -1933,12 +1973,14 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   if (nBrace) addHud(`N brace underside ${fmtMm(nBrace.userData.underside)} mm`, 0.5, nBrace.userData.underside + 0.04, -4.4, ['heights']);
   addHud('Sill 400 / head 2 300 mm', -4.2, 2.35, 1.5, ['heights']);
   addHud('Kitchen sill 1 200 mm (assumed)', 1.15, 1.22, -4.45, ['heights']);
+  addHud('Kitchen sill rail top 1 185 mm', 1.15, 1.185, -4.55, ['heights']);
   addHud('Counter 900 mm (confirmed)', 0.70, 0.90, -3.25, ['heights']);
   addHud('300 mm wall above the counter', -0.35, 1.05, -4.15, ['heights']);
   addHud('Kitchen window 900 × 1 100 (assumed), top 2 300 mm', 0.55, 1.75, -4.55, ['heights']);
+  addHud('15 mm fit gap (shims + sill tape, intended)', -3.55, 0.40, 3.55, ['heights']);
   addHud('Wall 250 mm — 150 frame + 50+50 cob/plaster', 0.2, 1.35, 5.35, ['heights']);
   addHud('Section: 50 cob + 150 frame + 50 cob', 0.42, 1.55, 5.12, ['heights']);
-  addHud('200 mm post, 25 mm cover each side', 0.08, 1.22, 5.28, ['heights']);
+  addHud('200 mm post; cob skin stops, timber exposed', 0.08, 1.22, 5.28, ['heights']);
   addHud('Window frame 70 mm in the 150 mm frame', -3.4, 1.55, 3.6, ['heights']);
   addHud('Inner wall 200 mm × 2 355 mm (unconfirmed)', -0.15, 1.35, 2.05, ['heights']);
   addHud('Upper closing 250 mm sandwich (unconfirmed)', 0.55, 2.85, 5.20, ['heights']);
