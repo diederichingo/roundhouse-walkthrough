@@ -1,6 +1,6 @@
 /**
- * Interior set dressing for the Option B walkthrough (v1j):
- * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch, table, Eames lounge).
+ * Interior set dressing for the Option B walkthrough (v1k):
+ * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch and coffee table only).
  * Pieces are typical sizes for a sense of space, not from the drawings.
  */
 import * as THREE from 'three';
@@ -210,45 +210,6 @@ function addCoffeeTable(parent, mats, W, D, H) {
   return g;
 }
 
-function addEamesLounge(parent, mats) {
-  // 840 W × 850 D × 830 H, dark leather, walnut shell. Local +Z is the front.
-  const g = new THREE.Group();
-  const W = 0.84, D = 0.85, H = 0.83;
-  // five-star metal base, low
-  cyl(g, 0.05, 0.05, 0.03, mats.metal, 0, 0.145, -0.06, 0, 0, 0, 12);
-  cyl(g, 0.016, 0.016, 0.15, mats.metal, 0, 0.075, -0.06, 0, 0, 0, 8);
-  for (let i = 0; i < 5; i++) {
-    const a = i * (Math.PI * 2 / 5) + 0.15;
-    const arm = box(g, 0.22, 0.016, 0.03, mats.metal, 0, 0, 0);
-    arm.position.set(Math.sin(a) * 0.10, 0.03, Math.cos(a) * 0.10 - 0.06);
-    arm.rotation.y = a;
-    sph(g, 0.018, mats.metal, Math.sin(a) * 0.21, 0.018, Math.cos(a) * 0.21 - 0.06, 1, 0.7, 1, 8);
-  }
-  // Seat shell — wide, shallow, slightly reclined
-  const seat = new THREE.Group();
-  box(seat, 0.74, 0.04, 0.50, mats.walnut, 0, 0, 0);
-  box(seat, 0.04, 0.10, 0.48, mats.walnut, -0.36, 0.04, 0);
-  box(seat, 0.04, 0.10, 0.48, mats.walnut,  0.36, 0.04, 0);
-  box(seat, 0.64, 0.10, 0.44, mats.leather, 0, 0.07, 0.02);
-  seat.position.set(0, 0.30, 0.08);
-  seat.rotation.x = -12 * DEG;
-  g.add(seat);
-  // Back shell — separate, reclined, with a headrest cushion
-  const back = new THREE.Group();
-  box(back, 0.70, 0.48, 0.04, mats.walnut, 0, 0, 0);
-  box(back, 0.04, 0.46, 0.16, mats.walnut, -0.34, 0, 0.06);
-  box(back, 0.04, 0.46, 0.16, mats.walnut,  0.34, 0, 0.06);
-  box(back, 0.58, 0.40, 0.09, mats.leather, 0, -0.01, 0.07);
-  box(back, 0.40, 0.13, 0.10, mats.leather, 0, 0.26, 0.06);
-  back.position.set(0, 0.58, -0.20);
-  back.rotation.x = -26 * DEG;
-  g.add(back);
-  g.userData.size = { w: W, d: D, h: H };
-  parent.add(g);
-  return g;
-}
-
-
 function aabbCollider(colliders, x0, x1, z0, z1) {
   colliders.push({ type: 'aabb', x0, x1, z0, z1 });
 }
@@ -299,10 +260,10 @@ export function furnishInterior(ctx) {
   bFig.userData.role = 'bathroom-person';
   addHud('1.70 m', bX + 0.10, 1.76, bZ + 0.18, ['heights', 'bathroom-person']);
 
-  // ——— Living room grouping, SW bay, south of the garden-door path ———
-  // Couch 1600 × 850 × 800, coffee table 900 × 500 × 400, Eames lounge opposite.
-  // Couch nudged 50 mm south so the walkway to the garden doors is 800 mm.
-  // Also 20 mm west so the south end stays just off the curved wall.
+  // ——— Living room, SW bay, south of the garden-door path ———
+  // Two-seat couch 1600 × 850 × 800 and coffee table 900 × 500 × 400 only. No chairs.
+  // Couch 50 mm south so the walkway to the garden doors is 800 mm, and 70 mm west of
+  // the first v1h position so the south end stays off the curved wall.
   const couch = addCouch(houseGroup, mats, 1.60, 0.85, 0.80);
   couch.position.set(-1.420, 0, 1.60);
   couch.rotation.y = -Math.PI / 2; // back to +X (curved wall), front to −X (garden)
@@ -311,14 +272,8 @@ export function furnishInterior(ctx) {
   table.position.set(-2.245, 0, 1.60);
   table.rotation.y = -Math.PI / 2; // 900 along Z, 500 along X
 
-  const lounge = addEamesLounge(houseGroup, mats);
-  // Closer to the table now the ottoman is gone (~400 mm gap).
-  lounge.position.set(-3.295, 0, 1.60);
-  lounge.rotation.y = -Math.PI / 2;
-
-  aabbCollider(colliders, -1.370 - 0.425, -1.370 + 0.425, 1.60 - 0.80, 1.60 + 0.80);
+  aabbCollider(colliders, -1.420 - 0.425, -1.420 + 0.425, 1.60 - 0.80, 1.60 + 0.80);
   aabbCollider(colliders, -2.245 - 0.25, -2.245 + 0.25, 1.60 - 0.45, 1.60 + 0.45);
-  aabbCollider(colliders, -3.295 - 0.425, -3.295 + 0.425, 1.60 - 0.42, 1.60 + 0.42);
 
   return {
     kitchenPerson: { x: kX, z: kZ, height: 1.80 },
@@ -326,8 +281,7 @@ export function furnishInterior(ctx) {
     bed: { x0: bedX0, x1: bedX1, z0: bedZ0, z1: bedZ1, w: bedW, l: bedL, h: BED_H },
     living: {
       couch: { x: -1.420, z: 1.60, w: 1.60, d: 0.85, h: 0.80, back: -0.995, front: -1.845, north: 0.80 },
-      table: { x: -2.245, z: 1.60, w: 0.90, d: 0.50, h: 0.40 },
-      lounge: { x: -3.295, z: 1.60, w: 0.84, d: 0.85, h: 0.83, west: -3.720 }
+      table: { x: -2.245, z: 1.60, w: 0.90, d: 0.50, h: 0.40 }
     }
   };
 }

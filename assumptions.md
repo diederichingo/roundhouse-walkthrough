@@ -104,7 +104,7 @@ The S inside brace underside of **1 999 mm** is accepted by Roundhouse as **2.00
 - A 1.80 m woman (about 60, slim, white hair, red dress) stands on the finished floor in front of the kitchen counter near the kitchen window, facing the counter. Label: `1.80 m`.
 - A 1.70 m woman (about 40, brown hair, leopard print) stands in the free floor of the bathroom, to show room to move. Label: `1.70 m`.
 - The bed mattress footprint is set to exactly 1.40 × 2.00 m (head against the closet, east side against the bathroom partition), about 480 mm high. On Els’s furniture sketch it had been about 1 515 × 1 788 mm × 450 mm high (the sketch is noted as not to scale). Label: `1.40 x 2.00 m`.
-- The living room grouping (two-seat couch about 1 600 × 850 × 800, coffee table 900 × 500 × 400, Eames lounge 840 × 850 × 830, dark leather and walnut) is typical furniture for a sense of space, not from the drawings. It sits in the south-west bay, south of the path to the west garden doors. The Eames ottoman that was in v1h was removed in v1i. The walkway from the couch to the garden-door south jamb is 800 mm.
+- The living room is only a two-seat couch (about 1 600 × 850 × 800) and a coffee table (900 × 500 × 400), typical furniture for a sense of space, not from the drawings. It sits in the south-west bay, south of the path to the west garden doors. The Eames ottoman was removed in v1i; the Eames lounge chair was removed in v1k. There is no chair or armchair in the living area. The walkway from the couch to the garden-door south jamb is 800 mm.
 
 
 ## v1j — sandwich walls (Roundhouse Control, 25 Nov 2026)
@@ -118,3 +118,8 @@ Walls are no longer solid cob. Source: `drawings_optionB/wall_buildup_proposal.m
 - Upper closing is the same **250 mm sandwich** (unconfirmed / CHECK): the US member changes from **100 × 50 to 150 × 50**, 150 mm across the wall, flush with both faces of the 150 mm head plate (previously 25 mm shy of each face). Skins (≤ 50 mm) on both faces. The 20 mm slip joint stays; laths and skins stop short of the moving roof. Skins and cavity run past the head plate so it is not a cold band. Position is unchanged (centred on R = 5.0, from the head-plate top at 2 475 mm to the roof underside minus 20 mm). The closing is non-load-bearing and is built around the main beams and the along-wall braces; beam bearing stays on the posts.
 - Head-plate remains 150 mm; the skins project 50 mm past it and continue to the roof, by design. Knee braces on the ring posts pass through the 25 mm cob that covers the inner post face — a local stop in the skin, not a structural clash.
 - Inner wall height is **2 355 mm** from the 20 mm plinth (top 2 375 mm AFF), with a 100 × 50 sole on DPC, a 100 × 50 head and a 100 × 100 full-height end post, all unconfirmed / CHECK.
+
+
+## v1k — living room is couch and table only
+
+The Eames lounge chair was removed. The living room is only the two-seat couch and the coffee table. No other chair or armchair remains in the living area (Els’s furniture sketch had none). Everything else from v1j is unchanged.
