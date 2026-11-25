@@ -1,5 +1,5 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1e.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1f. Rev 2026-11-25f.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
@@ -35,6 +35,7 @@ let measureOn = false;
 let measurePts = [];
 let keys = Object.create(null);
 const WALK_START = { x: -2.20, z: -0.35, yaw: 0.55, pitch: -0.08 };
+const START_CAM = { x: 15.4, y: 7.6, z: 16.6, tx: 3.6, ty: 1.35, tz: 0.8 };
 let yaw = WALK_START.yaw;
 let pitch = WALK_START.pitch;
 let player = new THREE.Vector3(WALK_START.x, EYE, WALK_START.z);
@@ -119,7 +120,7 @@ function stripeTexture() {
 function makeMaterials() {
   textures.cob = noiseTexture(128, [180, 150, 112], [150, 120, 86], 0.85);
   textures.cob.repeat.set(8, 4);
-  textures.timber = noiseTexture(64, [150, 108, 64], [110, 74, 40], 0.6);
+  textures.timber = noiseTexture(64, [176, 126, 82], [130, 88, 54], 0.55);
   textures.stone = noiseTexture(128, [150, 146, 138], [112, 108, 100], 0.75);
   textures.stone.repeat.set(6, 2);
   textures.earth = noiseTexture(128, [164, 130, 90], [130, 100, 68], 0.7);
@@ -135,7 +136,7 @@ function makeMaterials() {
     map: textures.cob, color: 0xe8d3b0, roughness: 0.95, metalness: 0.0
   });
   materials.timber = new THREE.MeshStandardMaterial({
-    map: textures.timber, color: 0xc4a06a, roughness: 0.7, metalness: 0.0
+    map: textures.timber, color: 0xd2a878, roughness: 0.68, metalness: 0.0
   });
   materials.stone = new THREE.MeshStandardMaterial({
     map: textures.stone, color: 0xb7b3ab, roughness: 0.9, metalness: 0.0
@@ -150,7 +151,7 @@ function makeMaterials() {
     map: textures.roof, color: 0x4a9a58, roughness: 0.45, metalness: 0.15
   });
   materials.roofUnder = new THREE.MeshStandardMaterial({
-    color: 0xcbb892, roughness: 0.9, metalness: 0.0,
+    color: 0xd4b48a, roughness: 0.9, metalness: 0.0,
     emissive: 0x3a3228, emissiveIntensity: 0.35, side: THREE.DoubleSide
   });
   materials.glass = new THREE.MeshStandardMaterial({
@@ -162,7 +163,7 @@ function makeMaterials() {
     color: 0x3aa0d8, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false
   });
   materials.door = new THREE.MeshStandardMaterial({
-    map: textures.timber, color: 0x8a5a32, roughness: 0.65, metalness: 0
+    map: textures.timber, color: 0x8e5e36, roughness: 0.65, metalness: 0
   });
   materials.white = new THREE.MeshStandardMaterial({ color: 0xeeeae4, roughness: 0.6 });
   materials.metal = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.7 });
@@ -661,10 +662,13 @@ function buildModel() {
   function addPost(p, kind) {
     // p.base, p.top are relative to plinth top (except we convert)
     const y0 = PL_TOP + mm(p.base);
-    const y1 = PL_TOP + mm(p.top) + ROOF_RAISE;
+    const y1 = PL_TOP + mm(p.top) + ROOF_RAISE; // beam soffit (body); 120 mm tenon goes up into the beam
     const m = addBox(houseGroup, 0.200, y1 - y0, 0.200, materials.timber, mm(p.x), (y0 + y1) / 2, wz(mm(p.y)));
     m.userData.post = p;
     posts.push({ name: p.name, x: mm(p.x), z: wz(mm(p.y)), y0, y1, kind: p.kind });
+    // 60×100×120 tenon into the beam; no steel cap
+    const tenon = addBox(houseGroup, 0.060, 0.120, 0.100, materials.timber, mm(p.x), y1 + 0.060, wz(mm(p.y)));
+    tenon.castShadow = false;
     // base metal
     addBox(houseGroup, 0.22, 0.08, 0.22, materials.metal, mm(p.x), y0 - 0.02, wz(mm(p.y))).castShadow = false;
     // footing hint
@@ -681,8 +685,13 @@ function buildModel() {
   G.posts.forEach((p) => addPost(p));
   G.extPosts.forEach((p) => addPost(p));
 
-  // Main beams (sloped, depth perpendicular to 7°)
-  const beamLen = 12 / Math.cos(7 * DEG);
+  // Main beams (sloped, depth perpendicular to 7°). Plan length = roof N–S, ends flush at y = ±6.2 m.
+  const roofX0 = mm(G.roof.x0), roofX1 = mm(G.roof.x1);
+  const roofY0 = mm(G.roof.y0), roofY1 = mm(G.roof.y1);
+  const roofW = roofX1 - roofX0;
+  const roofMidX = (roofX0 + roofX1) / 2;
+  const beamPlan = roofY1 - roofY0;
+  const beamLen = beamPlan / Math.cos(7 * DEG);
   G.beamXs.forEach((xmm) => {
     const x = mm(xmm);
     const midZ = soffitFFL(0) + 0.120; // centre of 240 mm depth along vertical almost
@@ -710,31 +719,31 @@ function buildModel() {
     scarf.rotation.x = 7 * DEG;
   });
 
-  // Purlins (level)
+  // Purlins (level). Eave pieces have their outer face at y = ±6 200 (CL ±6 125).
   G.purlin.ys.forEach((ymm) => {
     const z = wz(mm(ymm));
     const yTop = coverFFL(mm(ymm));
-    const m = addBox(houseGroup, 16.0, 0.200, 0.150, materials.timber, 2.0, yTop - 0.100, z);
+    const m = addBox(houseGroup, roofW, 0.200, 0.150, materials.timber, roofMidX, yTop - 0.100, z);
   });
 
-  // Roof sandwich panels
-  const slopeLen = 12 / Math.cos(7 * DEG);
+  // Roof sandwich panels — 16.5 × 12.4 m plan, edges flush with beams and eave purlins.
+  const slopeLen = beamPlan / Math.cos(7 * DEG);
   const roofMats = [
     materials.roof, materials.roof,
     materials.roof, materials.roofUnder,
     materials.roof, materials.roof
   ];
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(16.0, 0.060, slopeLen), roofMats);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.060, slopeLen), roofMats);
   roof.rotation.x = 7 * DEG;
-  roof.position.set(2.0, coverFFL(0) + 0.030 * Math.cos(7 * DEG), 0);
+  roof.position.set(roofMidX, coverFFL(0) + 0.030 * Math.cos(7 * DEG), 0);
   roof.castShadow = true;
   roof.receiveShadow = false;
   houseGroup.add(roof);
   roofMesh = roof;
   // Dedicated timber underside, offset below the panel so it never self-shadows.
-  const roofUnder = new THREE.Mesh(new THREE.PlaneGeometry(16.0, slopeLen), materials.roofUnder);
+  const roofUnder = new THREE.Mesh(new THREE.PlaneGeometry(roofW, slopeLen), materials.roofUnder);
   roofUnder.rotation.set(Math.PI / 2 + 7 * DEG, 0, 0);
-  roofUnder.position.set(2.0, coverFFL(0) - 0.035, 0);
+  roofUnder.position.set(roofMidX, coverFFL(0) - 0.035, 0);
   roofUnder.receiveShadow = false;
   roofUnder.castShadow = false;
   houseGroup.add(roofUnder);
@@ -824,11 +833,17 @@ function buildModel() {
   // top plate
   addBox(houseGroup, (ux1-ux0)+0.15, 0.100, (uz1-uz0)+0.15, materials.timber,
     (ux0+ux1)/2, plateTop - 0.050, (uz0+uz1)/2);
-  // utility posts
+  // utility posts: body to the plate underside, 100 mm flush through-tenon with 2 oak wedges
   G.utilPosts.forEach((p) => {
     const y0 = PL_TOP + mm(p.base);
-    const y1 = PL_TOP + mm(p.top);
-    addBox(houseGroup, 0.200, y1-y0, 0.200, materials.timber, mm(p.x), (y0+y1)/2, wz(mm(p.y)));
+    const bodyTop = plateTop - 0.100;
+    addBox(houseGroup, 0.200, bodyTop - y0, 0.200, materials.timber, mm(p.x), (y0 + bodyTop) / 2, wz(mm(p.y)));
+    const tenon = addBox(houseGroup, 0.060, 0.100, 0.100, materials.timber, mm(p.x), plateTop - 0.050, wz(mm(p.y)));
+    tenon.castShadow = false;
+    // two wedges, trimmed flush with the plate top
+    const wedgeMat = materials.door;
+    addBox(houseGroup, 0.012, 0.008, 0.040, wedgeMat, mm(p.x) - 0.014, plateTop - 0.004, wz(mm(p.y))).castShadow = false;
+    addBox(houseGroup, 0.012, 0.008, 0.040, wedgeMat, mm(p.x) + 0.014, plateTop - 0.004, wz(mm(p.y))).castShadow = false;
     colliders.push({ type: 'post', x: mm(p.x), z: wz(mm(p.y)), r: 0.12 });
   });
   // utility door (south, hinge west, opens out)
@@ -1024,36 +1039,17 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
     };
   }
 
-  // Outdoor walkway headroom under 2.0 m (south-edge N-S corner braces ≈ 1 877 mm)
+  // Outdoor S-corner N–S braces (~1 877 mm) were accepted by Tom on 25 Nov 2026
+  // (rev f): not a drawn clash, off the open list. Record only; do not highlight.
   const outdoorFlag = outdoorLow.filter((r) => r.under < LIMIT - EPS);
   const outdoorLimit = outdoorLow.filter((r) => r.atLimit || Math.abs(r.under - LIMIT) <= EPS);
-  outdoorFlag.forEach((r) => highlight(r.mesh, materials.clashAmber));
-  outdoorLimit.forEach((r) => highlight(r.mesh, materials.clashAmber));
-  if (outdoorFlag.length) {
-    const byPost = {};
-    outdoorFlag.forEach((r) => {
-      const k = r.brace.post;
-      if (!byPost[k] || r.under < byPost[k].under) byPost[k] = r;
-    });
-    const parts = Object.values(byPost)
-      .sort((a, b) => a.under - b.under)
-      .map((r) => `${r.brace.post} ${fmtMm(r.under)} mm`);
-    const minU = Math.min(...outdoorFlag.map((r) => r.under));
-    computedClashes.push({
-      id: 'outdoor-corners',
-      severity: 'amber',
-      title: 'Outdoor walkway headroom',
-      detail: `Corner braces under the south roof edge sit at ${fmtMm(minU)} mm (below 2.0 m outside). ${parts.join('; ')}.`,
-      under: minU,
-      posts: Object.keys(byPost)
-    });
-    CLASH_VIEWS['outdoor-corners'] = {
-      cam: { x: 2.8, y: 1.7, z: 9.6, tx: 5.0, ty: 1.9, tz: 6.0 }
-    };
-  }
-  if (outdoorLimit.length && !sInside) {
-    // only if we didn't already describe the 2.0 m case indoors
-  }
+  const outdoorAccepted = {};
+  outdoorFlag.forEach((r) => {
+    const k = r.brace.post + ' ' + r.brace.dir;
+    if (!outdoorAccepted[k] || r.under < outdoorAccepted[k].under) {
+      outdoorAccepted[k] = { post: r.brace.post, dir: r.brace.dir, under: r.under };
+    }
+  });
 
   // Window vs worktop: a clash only if the opening overlaps a 900 mm work surface
   // in plan and the sill is below the worktop. Kitchen sill 1 200 mm leaves a
@@ -1120,11 +1116,22 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   const neSoffit = soffitFFL(mm(U.y_n));
   const seGap = seSoffit - plateTop;
   const neGap = neSoffit - plateTop;
+  const eastEw = braceMeshes.filter((m) => {
+    const b = m.userData.brace;
+    return b && (b.post === 'SE-ext' || b.post === 'E-ext' || b.post === 'NE-ext') && b.dir === 'E-W';
+  }).map((m) => ({ post: m.userData.brace.post, side: m.userData.brace.side, under: m.userData.underside }));
+  const eaveS = mm(G.roof.y0), eaveN = mm(G.roof.y1);
   computedClashes.cleared = {
     sJoint: { beamSoffit: sSoffit, headPlateTop: headTop, clearance: sSoffit - headTop },
     ewBraces: ewUnder != null ? { underside: ewUnder, headPlateTop: headTop, doorHead, abovePlate: ewUnder - headTop, aboveDoor: ewUnder - doorHead } : null,
     utility: { plateTop, seSoffit, neSoffit, seGap, neGap },
-    counterWindows: windowChecks
+    counterWindows: windowChecks,
+    outdoorCornersAccepted: {
+      note: 'SW / SE / SE-ext N–S braces at 1 877 mm accepted by Tom, 25 Nov 2026 (rev f); not a drawn clash.',
+      items: Object.values(outdoorAccepted)
+    },
+    eastEwBraces: eastEw,
+    eaves: { south: coverFFL(eaveS), north: coverFFL(eaveN), seGap, neGap }
   };
 
   // 2.0 m headroom planes
@@ -1161,8 +1168,9 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   addHud(`Roof underside ${fmtMm(coverFFL(-5))} mm at S`, -1.2, coverFFL(-5) + 0.02, 5, ['heights']);
   addHud(`Roof underside ${fmtMm(coverFFL(0))} mm at centre`, -1.2, coverFFL(0) + 0.02, 0, ['heights']);
   addHud(`Roof underside ${fmtMm(coverFFL(5))} mm at N`, -1.2, coverFFL(5) + 0.02, -5, ['heights']);
-  addHud(`Eaves S ${fmtMm(coverFFL(-6))} mm`, -1.6, coverFFL(-6) + 0.02, 6.05, ['heights']);
-  addHud(`Eaves N ${fmtMm(coverFFL(6))} mm`, -1.6, coverFFL(6) + 0.02, -6.05, ['heights']);
+  addHud(`Eaves S ${fmtMm(coverFFL(eaveS))} mm`, -1.8, coverFFL(eaveS) + 0.02, wz(eaveS), ['heights']);
+  addHud(`Eaves N ${fmtMm(coverFFL(eaveN))} mm`, -1.8, coverFFL(eaveN) + 0.02, wz(eaveN), ['heights']);
+  addHud('1.5 m east overhang', 9.75, coverFFL(0) + 0.12, 0.15, ['heights']);
   // Per-beam soffits are identical at a given northing (x = -5, 0, +5, +9).
   addHud(`East beam soffit S ${fmtMm(soffitFFL(-5))} mm`, 9.0, soffitFFL(-5) + 0.04, 5.05, ['heights']);
   addHud(`East beam soffit centre ${fmtMm(soffitFFL(0))} mm`, 9.0, soffitFFL(0) + 0.04, 0, ['heights']);
@@ -1193,9 +1201,7 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   addHud('Plinth top 220 mm', 3.2, 0.35, -3.2, ['heights']);
   if (outdoorFlag.length) {
     const sample = outdoorFlag.reduce((a, b) => a.under < b.under ? a : b);
-    addHud(`Outdoor brace underside ${fmtMm(sample.under)} mm`, sample.midX + 0.4, sample.under + 0.05, sample.midZ + 0.4, ['heights', 'outdoor-corners']);
-    addHud('2.0 m outdoor headroom plane', 5.0, 2.00, 7.2, ['outdoor-corners']);
-    addHud('Below 2.0 m on the outdoor walkway', 3.2, 1.7, 6.8, ['outdoor-corners']);
+    addHud(`Outdoor brace underside ${fmtMm(sample.under)} mm`, sample.midX + 0.4, sample.under + 0.05, sample.midZ + 0.4, ['heights']);
   }
 
   fillClashPanel();
@@ -1597,8 +1603,8 @@ function setMode(next, opts = {}) {
     player.y = EYE;
     if (pointerLocked && document.exitPointerLock) document.exitPointerLock();
   } else if (!opts.keepCamera) {
-    camera.position.set(16, 9, 18);
-    orbit.target.set(2, 1.6, 0);
+    camera.position.set(START_CAM.x, START_CAM.y, START_CAM.z);
+    orbit.target.set(START_CAM.tx, START_CAM.ty, START_CAM.tz);
     orbit.update();
     if (document.exitPointerLock) document.exitPointerLock();
   } else if (document.exitPointerLock) {
@@ -1742,8 +1748,8 @@ async function init() {
   scene.fog = new THREE.Fog(0x87a0b8, 40, 80);
 
   camera = new THREE.PerspectiveCamera(60, 2, 0.08, 80);
-  camera.position.set(16, 9, 18);
-  camera.lookAt(2, 1.6, 0);
+  camera.position.set(START_CAM.x, START_CAM.y, START_CAM.z);
+  camera.lookAt(START_CAM.tx, START_CAM.ty, START_CAM.tz);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -1778,7 +1784,7 @@ async function init() {
   buildModel();
 
   orbit = new OrbitControls(camera, canvas);
-  orbit.target.set(2, 1.6, 0);
+  orbit.target.set(START_CAM.tx, START_CAM.ty, START_CAM.tz);
   orbit.enableDamping = true;
   orbit.dampingFactor = 0.08;
   orbit.maxPolarAngle = Math.PI * 0.49;

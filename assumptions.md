@@ -63,7 +63,7 @@ Heights above FFL (7° slope; UI values are rounded to the nearest millimetre):
 
 - Roof underside: S wall 3 110 mm, centre 3 724 mm (model 3 723.9), N wall 4 338 mm (model 4 337.8)
 - Main-beam soffit, all four beams (x = −5, 0, +5, +9 m): S wall 2 670 mm, centre 3 284 mm (model 3 283.9), N wall 3 898 mm (model 3 897.8)
-- Eaves (roof underside): S 2 987 mm (model 2 987.2), N 4 461 mm (model 4 460.6)
+- Eaves (roof underside, at y = ±6 200): S 2 963 mm (model 2 962.7), N 4 485 mm (model 4 485.2)
 - Brace undersides: S inside 1 999 mm, E/W 2 613 mm, N 3 227 mm, outdoor S corners 1 877 mm
 - Head plate 2 375–2 475 mm, windows 400–2 300 mm, door-head line 2 375 mm, utility plate 2 650 mm
 - East-beam to utility plate: SE gap 315 mm, NE gap 560 mm. FFL stays 180 mm above grade.
@@ -77,3 +77,17 @@ Not raised: cob walls, the head plate (top 2 475 mm, soffit 2 375 mm), openings 
 ## Confirmed: kitchen counters (25 Nov 2026)
 
 Kitchen counter height is **900 mm** above the finished inside floor, for **all kitchen counters**. Confirmed by Tom, 25 Nov 2026. This is no longer an assumption. All window tops stay at **2 300 mm**. The kitchen-window sill remains **1 200 mm**, assumed, leaving a 300 mm wall/apron above the worktop.
+
+## Rev 2026-11-25f (final)
+
+Roof plan **16.5 × 12.4 m**: x from −6 000 to +10 500 mm, y ±6 200 mm. Main beams, eave purlins and the panel edge are flush at y = ±6 200 (200 mm past the end-post centrelines). Eave purlin centreline ±6 125 mm. No steel end-post caps; every roof post has a 60 × 100 × 120 mm tenon into the beam.
+
+East overhang **1.5 m** past the beam at x = +9 (roof edge at x = +10 500). Confirmed (Tom, 25 Nov 2026). The 600/600 45° E–W braces under that overhang match the west eave.
+
+Eaves (roof underside): south **2 962.7 mm** (rounds to 2 963), north **4 485.2 mm** (rounds to 4 485) above FFL. Wall underside figures are unchanged (3 110 / 3 724 / 4 338). Utility SE gap under the east beam remains **315 mm**.
+
+Utility posts: wedged through-tenons, plates over the post tops, no utility pegs.
+
+Structural timber: **Douglas fir, C24 or equivalent**. Moisture content and treatment are still open. Sandwich panel product is still to pick.
+
+The outdoor SW / SE / SE-ext N–S brace underside of **1 877 mm** was accepted by Tom (25 Nov 2026) and is not treated as a drawn clash.

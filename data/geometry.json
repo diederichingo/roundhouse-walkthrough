@@ -56,22 +56,22 @@
     "w": 150,
     "d": 200,
     "ys": [
-      -6000.0,
-      -4500.0,
-      -3000.0,
-      -1500.0,
-      0.0,
-      1500.0,
-      3000.0,
-      4500.0,
-      6000.0
+      -6125,
+      -4500,
+      -3000,
+      -1500,
+      0,
+      1500,
+      3000,
+      4500,
+      6125
     ]
   },
   "roof": {
     "x0": -6000,
-    "x1": 10000,
-    "y0": -6000,
-    "y1": 6000
+    "x1": 10500,
+    "y0": -6200,
+    "y1": 6200
   },
   "beamXs": [
     -5000,
@@ -1349,9 +1349,15 @@
     "soffit_south_wall": 2670,
     "soffit_centre": 3283.9,
     "soffit_north_wall": 3897.8,
-    "eaves_south_cover": 2987.2,
-    "eaves_north_cover": 4460.6,
-    "note": "Raised 200 mm. Post top fields in this file are pre-raise; the walkthrough adds ROOF_RAISE. Heights depend only on y; beams at x=-5,0,+5,+9 share soffits at a given northing."
+    "eaves_south_cover": 2962.7,
+    "eaves_north_cover": 4485.2,
+    "note": "Rev 2026-11-25f. Roof 16.5 \u00d7 12.4 m, x \u22126000 to +10500, y \u00b16200. Eave purlin CL \u00b16125, outer face flush with beam and panel at \u00b16200. East edge 1.5 m past x=+9 (confirmed). Post tops in this file are pre-raise; the walkthrough adds ROOF_RAISE = 0.200.",
+    "roof_plan_m": [
+      16.5,
+      12.4
+    ],
+    "east_overhang_m": 1.5
   },
-  "roofRaiseMm": 200
+  "roofRaiseMm": 200,
+  "species": "Douglas fir, C24 or equivalent"
 }
