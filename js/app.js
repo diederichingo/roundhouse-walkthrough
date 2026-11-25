@@ -1,10 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1g. Rev 2026-11-25f (end-post level braces flush).
+ * Els's roundhouse, Penamacor — Option B walkthrough v1h. Rev 2026-11-25f.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1h';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -41,6 +42,7 @@ let pitch = WALK_START.pitch;
 let player = new THREE.Vector3(WALK_START.x, EYE, WALK_START.z);
 let fly = null; // {fromPos,toPos,fromTarget,toTarget,t,dur}
 let activeClash = null;
+let activeView = null;
 let hudLabels = [];
 let computedClashes = [];
 let headroomOutdoor = null;
@@ -944,7 +946,7 @@ function buildModel() {
   }
   polyBlock(F.closetShower, PART_H, 0, materials.timber);
   polyBlock(F.closetBed, PART_H, 0, materials.timber);
-  polyBlock(F.bed, 0.450, 0, materials.door);
+  // Bed is built in furnishInterior (1.40 × 2.00 m mattress, ~480 mm high).
   polyBlock(F.shower, 0.050, 0, materials.white);
   polyBlock(F.counter, 0.850, 0, materials.timber);
   // worktop
@@ -965,6 +967,9 @@ function buildModel() {
   fixture(F.wc, 'WC');
   fixture(F.bidet, 'bidet');
   fixture(F.basin, 'basin');
+
+  const interior = furnishInterior({ houseGroup, colliders, F, mm, wz });
+  window.__interior = interior;
 
   // Kitchen work surfaces (all counters confirmed at 900 mm above FFL)
   const COUNTER_H = 0.900;
@@ -1280,6 +1285,7 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
     const sample = outdoorFlag.reduce((a, b) => a.under < b.under ? a : b);
     addHud(`Outdoor brace underside ${fmtMm(sample.under)} mm`, sample.midX + 0.4, sample.under + 0.05, sample.midZ + 0.4, ['heights']);
   }
+  furnishingLabels.forEach((l) => addHud(l.text, l.x, l.y, l.z, l.groups));
 
   fillClashPanel();
 }
@@ -1600,6 +1606,8 @@ function flyToClash(id, instant) {
   if (!view) return;
   setClashes(true);
   activeClash = id;
+  activeView = null;
+  document.querySelectorAll('#views button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
   if (headroomPlane) headroomPlane.visible = id === 's-brace';
   if (headroomOutdoor) headroomOutdoor.visible = id === 'outdoor-corners';
   document.querySelectorAll('#presets button').forEach((b) => {
@@ -1618,7 +1626,32 @@ function flyToClash(id, instant) {
   }
 }
 
+function setView(name, instant) {
+  const view = VIEW_CAMS[name];
+  if (!view) return;
+  activeView = name;
+  activeClash = null;
+  if (headroomPlane) headroomPlane.visible = false;
+  if (headroomOutdoor) headroomOutdoor.visible = false;
+  document.querySelectorAll('#presets button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+  document.querySelectorAll('#views button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.view === name));
+  });
+  syncHudLabels();
+  if (instant) {
+    if (mode !== 'orbit') setMode('orbit', { keepCamera: true });
+    fly = null;
+    camera.position.set(view.cam.x, view.cam.y, view.cam.z);
+    orbit.target.set(view.cam.tx, view.cam.ty, view.cam.tz);
+    orbit.update();
+    orbit.enabled = true;
+  } else {
+    flyToView(view.cam);
+  }
+}
+
 function setWalkView(name) {
+
   setMode('walk');
   if (name === 'kitchen') {
     player.set(0.15, EYE, -2.45);
@@ -1643,7 +1676,8 @@ function syncHudLabels() {
   root.innerHTML = '';
   hudLabels.forEach((l) => {
     const show = (activeClash && l.groups.includes(activeClash))
-      || (heightsOn && l.groups.includes('heights'));
+      || (heightsOn && l.groups.includes('heights'))
+      || (activeView && l.groups.includes(activeView));
     if (!show) return;
     const el = document.createElement('div');
     el.className = 'lab';
@@ -1910,6 +1944,13 @@ function bindUI() {
     const btn = e.target.closest('button[data-clash]');
     if (btn) flyToClash(btn.dataset.clash);
   });
+  const views = document.getElementById('views');
+  if (views) {
+    views.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-view]');
+      if (btn) setView(btn.dataset.view);
+    });
+  }
   document.getElementById('btnMeasure').addEventListener('click', (e) => {
     measureOn = !measureOn;
     e.currentTarget.setAttribute('aria-pressed', String(measureOn));
@@ -2103,6 +2144,46 @@ window.__roundhouse = {
   getClashes: () => computedClashes,
   roofRaise: () => ROOF_RAISE,
   setWalkView,
+  setView,
   activeClash: () => activeClash,
-  doors: () => doors.map((d) => d.name)
+  activeView: () => activeView,
+  doors: () => doors.map((d) => d.name),
+  interior: () => window.__interior,
+  personGaps() {
+    const it = window.__interior;
+    if (!it) return null;
+    const k = it.kitchenPerson;
+    const yNorth = -k.z;
+    const head = k.height;
+    const winHead = 2.300;
+    const soffit = soffitFFL(yNorth);
+    // nearest brace to the kitchen figure
+    let nearest = null;
+    houseGroup.traverse((m) => {
+      if (!m.userData || !m.userData.brace) return;
+      const p = m.position;
+      const d = Math.hypot(p.x - k.x, p.z - k.z);
+      const under = m.userData.underside;
+      if (nearest == null || d < nearest.dist) {
+        nearest = {
+          post: m.userData.brace.post,
+          dir: m.userData.brace.dir,
+          dist: d,
+          underside: under,
+          gap: under - head
+        };
+      }
+    });
+    return {
+      kitchen: {
+        head,
+        toWindowHead: winHead - head,
+        beamSoffit: soffit,
+        toBeamSoffit: soffit - head,
+        nearestBrace: nearest
+      },
+      bathroom: { head: it.bathroomPerson.height, x: it.bathroomPerson.x, z: it.bathroomPerson.z },
+      bed: it.bed
+    };
+  }
 };

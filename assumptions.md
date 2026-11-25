@@ -97,3 +97,11 @@ The outdoor SW / SE / SE-ext N–S brace underside of **1 877 mm** was accepted 
 The 12 level (E–W) braces on the six end posts (SW, SE, NW, NE, SE-ext, NE-ext) sit flush with the outer post face (the outer 100 mm band, y 6 000–6 100, mirrored on the south) instead of being centred on the post. That gives 50 mm bearing under the eave purlin (CL ±6 125). Shop lengths are unchanged (600 mm legs). Each of those 12 brace heads is fixed to the eave purlin with a galvanised steel angle, approx. 90×90×65 mm (size approx.). This came from Roundhouse Control; the B-sheets in `drawings_optionB/` had not yet been regenerated with this note when the walkthrough was updated.
 
 The S inside brace underside of **1 999 mm** is accepted by Roundhouse as **2.00 m** (within tolerance). The height label remains visible.
+
+
+## v1h — scale figures, bed size, living room
+
+- A 1.80 m woman (about 60, slim, white hair, red dress) stands on the finished floor in front of the kitchen counter near the kitchen window, facing the counter. Label: `1.80 m`.
+- A 1.70 m woman (about 40, brown hair, leopard print) stands in the free floor of the bathroom, to show room to move. Label: `1.70 m`.
+- The bed mattress footprint is set to exactly 1.40 × 2.00 m (head against the closet, east side against the bathroom partition), about 480 mm high. On Els’s furniture sketch it had been about 1 515 × 1 788 mm × 450 mm high (the sketch is noted as not to scale). Label: `1.40 x 2.00 m`.
+- The living room grouping (two-seat couch about 1 600 × 850 × 800, coffee table 900 × 500 × 400, Eames lounge 840 × 850 × 830 with ottoman 660 × 540 × 380, dark leather and walnut) is typical furniture for a sense of space, not from the drawings. It sits in the south-west bay, south of the path to the west garden doors.

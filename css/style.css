@@ -214,3 +214,13 @@ body.walk.touch #hint { left: 156px; }
 #acceptedList { margin: 0 0 8px; padding-left: 18px; font-size: 12px; color: var(--muted); }
 #acceptedList li { margin: 0 0 6px; }
 #clashList li.none { color: var(--muted); list-style: none; margin-left: -18px; }
+
+#views { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+#views button {
+  appearance: none; border: 1px solid var(--line); border-radius: 8px;
+  background: #2a2622; color: var(--ink);
+  padding: 8px 10px; font: inherit; font-size: 13px; font-weight: 600;
+  text-align: left; cursor: pointer;
+}
+#views button:hover { border-color: #8a7a68; }
+#views button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
