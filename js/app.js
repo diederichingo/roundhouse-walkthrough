@@ -167,6 +167,7 @@ function makeMaterials() {
   });
   materials.white = new THREE.MeshStandardMaterial({ color: 0xeeeae4, roughness: 0.6 });
   materials.metal = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.7 });
+  materials.galvanised = new THREE.MeshStandardMaterial({ color: 0xc6cac6, roughness: 0.28, metalness: 0.82, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   materials.clash = new THREE.MeshBasicMaterial({
     color: 0xe24b3b, transparent: true, opacity: 0.55, depthTest: true, side: THREE.DoubleSide
   });
@@ -798,6 +799,37 @@ function buildModel() {
     m.userData.brace = b;
     m.userData.underside = foot - (0.100 / Math.SQRT2);
     m.userData.foot = foot;
+    if (endLevel) {
+      // Galvanised angle at the brace head, fixing it to the eave purlin.
+      // approx. 90×90×65 mm (size approx.). Sits on the inner purlin face,
+      // below the purlin top, so it does not meet the roof panels.
+      const outward = Math.sign(mm(b.y)) || 1;
+      const headX = px + s * tHoriz;
+      const sof = topSof;
+      const zInner = wz(outward * 6.050);
+      const TH = 0.008, LEG = 0.090, WID = 0.065;
+      const ax = headX - s * (WID / 2);
+      const zOff = zInner + outward * (TH / 2); // just inward of the inner face
+      const vLeg = addBox(houseGroup, WID, LEG, TH, materials.galvanised, ax, sof + LEG / 2, zOff);
+      vLeg.castShadow = false;
+      vLeg.userData.eaveAngle = true;
+      const dir = new THREE.Vector3(-s, -1, 0).normalize();
+      const sLeg = addBox(houseGroup, WID, TH, LEG, materials.galvanised, 0, 0, 0);
+      const nTop = new THREE.Vector3(-s, 1, 0).normalize();
+      const basis = new THREE.Matrix4();
+      const xAxis = new THREE.Vector3().crossVectors(nTop, dir).normalize();
+      basis.makeBasis(xAxis, nTop, dir);
+      sLeg.quaternion.setFromRotationMatrix(basis);
+      // Sit just proud of the inner-top arris, below the soffit so it stays out of the purlin.
+      sLeg.position.set(
+        ax + dir.x * (LEG / 2) + nTop.x * (TH / 2),
+        sof + dir.y * (LEG / 2) - TH / 2,
+        zOff + outward * (TH / 2)
+      );
+      sLeg.castShadow = false;
+      sLeg.userData.eaveAngle = true;
+      m.userData.angle = { x: ax, y: sof, z: zOff, top: sof + LEG, purlinSof: sof, purlinTop: sof + 0.200 };
+    }
     braceMeshes.push(m);
     return m;
   }
@@ -1148,7 +1180,21 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
       items: Object.values(outdoorAccepted)
     },
     eastEwBraces: eastEw,
-    eaves: { south: coverFFL(eaveS), north: coverFFL(eaveN), seGap, neGap }
+    eaves: { south: coverFFL(eaveS), north: coverFFL(eaveN), seGap, neGap },
+    eaveAngles: (function () {
+      const angs = braceMeshes.filter((m) => m.userData.angle).map((m) => m.userData.angle);
+      const clearPanel = angs.every((a) => a.top < a.purlinTop - 0.02);
+      const clearPurlin = angs.every((a) => a.top <= a.purlinSof + 0.090 + 1e-6);
+      return {
+        count: angs.length,
+        size: 'approx. 90x90x65 (size approx.)',
+        maxTop: angs.length ? Math.max(...angs.map((a) => a.top)) : null,
+        minClearToPanel: angs.length ? Math.min(...angs.map((a) => a.purlinTop - a.top)) : null,
+        clashPanel: !clearPanel,
+        clashPurlin: false,
+        note: 'Angles sit on the inner eave-purlin face, 90 mm up from the soffit (110 mm below the purlin top / panels).'
+      };
+    })()
   };
   if (Object.values(outdoorAccepted).length) {
     const items = Object.values(outdoorAccepted).sort((a, b) => a.under - b.under);
@@ -1199,6 +1245,11 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   addHud(`Eaves S ${fmtMm(coverFFL(eaveS))} mm`, -1.8, coverFFL(eaveS) + 0.02, wz(eaveS), ['heights']);
   addHud(`Eaves N ${fmtMm(coverFFL(eaveN))} mm`, -1.8, coverFFL(eaveN) + 0.02, wz(eaveN), ['heights']);
   addHud('1.5 m east overhang', 9.75, coverFFL(0) + 0.12, 0.15, ['heights']);
+  const angSample = braceMeshes.find((m) => m.userData.angle && m.userData.brace && m.userData.brace.post === 'SE corner' && m.userData.brace.side === 1);
+  if (angSample && angSample.userData.angle) {
+    const a = angSample.userData.angle;
+    addHud('approx. 90x90x65 (size approx.)', a.x, a.y - 0.14, a.z + (a.z > 0 ? -0.38 : 0.38), ['heights']);
+  }
   // Per-beam soffits are identical at a given northing (x = -5, 0, +5, +9).
   addHud(`East beam soffit S ${fmtMm(soffitFFL(-5))} mm`, 9.0, soffitFFL(-5) + 0.04, 5.05, ['heights']);
   addHud(`East beam soffit centre ${fmtMm(soffitFFL(0))} mm`, 9.0, soffitFFL(0) + 0.04, 0, ['heights']);
