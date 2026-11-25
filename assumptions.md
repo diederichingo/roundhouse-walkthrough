@@ -138,3 +138,11 @@ The living-room Eames lounge chair was already removed in the first v1k commit. 
 - Kitchen sill rail top is **1 185 mm AFF** (confirmed). The window sill (frame bottom) stays at the assumed **1 200 mm**. The 100 mm rail sits in the 150 mm frame (bottom 1 085 mm); cob under the rail is 715 mm from the sole top (370 mm). A 15 mm intended fit gap (shims + sill tape) sits between the rail and the frame, the same as the other windows.
 - The 15 mm gap between the 15 mm packer (top 385 mm) and the 400 mm sill is an **intended fit gap** (`FIT_GAP`, shims + weather/air seal and sill tape on the packer). It is not a mismatch, and the packer is not thickened to 30 mm.
 - The cob skin **thins or stops at the posts and knee braces**. The 200 mm posts stay 25 mm proud of the 150 mm frame; the timber is left **exposed** (or lime-washed), not wrapped in cob. Knee braces are not wrapped either (trapped moisture, awkward drying).
+
+
+## v1m — close the wall to the beam; ceiling insulation inside; brace collars
+
+- The v1j didactic section cut just east of the S ring post (1.20–3.60°) was a through-hole in the wall, and the upper closing had been stopped in each ring-post sector, leaving a see-through gap under the eave beam (the post stops at the beam soffit). Both are closed: the sandwich is continuous around the perimeter, and at each ring post the skins meet the beam and the sandwich continues from the beam top up to the 20 mm roof slip. Window frames now fill the opening so they meet the posts and mullions. Post faces below the beam stay exposed / lime-washed.
+- Tom decided the roof insulation goes **inside**. The T&G ceiling is kept; the insulation-location CHECK is dropped. Product (wood-fibre / Volcalis preferred) and joist hangers remain CHECK.
+- The four interior E–W brace heads at the centre purlin (tops 3 574 mm vs T&G 3 504 mm) pass through a trimmed opening with a timber collar. That clash is cleared.
+- US studs are **50 mm** in the plane, 150 mm across the wall. The two studs that left 23 mm bays at the E/W ring posts (88.3° / 271.7°) are omitted, as is the 0° stud; count **50**.

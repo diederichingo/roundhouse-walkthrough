@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1l. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1m. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1l';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1m';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -466,18 +466,12 @@ function buildModel() {
   const CURVE_T = 0.200; // inner wall, UNCONFIRMED (proposal CHECK: 100 mm frame + 2×50 mm skins)
   const PACKER = 0.015;  // 15 mm packer on the sole under windows with no under-sill
   const FIT_GAP = 0.015; // intended fit gap (shims + sill tape) each side of the unit
-  // Didactic section just east of the S ring post, so the sandwich and the exposed post can be read.
-  const SECTION_A0 = 1.20, SECTION_A1 = 3.60;
-
+  // The v1j didactic section cut (1.20–3.60°, just east of the S post) was a
+  // through-hole in the wall. It is closed: the sandwich is continuous. The
+  // post-coverage view still reads the layers at the exposed post end-caps.
   function rangesExceptSection(a0, a1) {
     if (a1 < a0) a1 += 360;
-    const out = [];
-    if (a1 <= SECTION_A0 || a0 >= SECTION_A1) out.push([a0, a1]);
-    else {
-      if (a0 < SECTION_A0) out.push([a0, Math.min(a1, SECTION_A0)]);
-      if (a1 > SECTION_A1) out.push([Math.max(a0, SECTION_A1), a1]);
-    }
-    return out.filter(([x, y]) => y - x > 0.05);
+    return (a1 - a0 > 0.05) ? [[a0, a1]] : [];
   }
 
   function sandwichRing(a0, a1, y0, y1, segs = 8) {
@@ -601,25 +595,63 @@ function buildModel() {
       }
     }
   });
-  // US studs, 150 × 50, 150 mm radial, ~600 mm along the wall, standing on the head plate.
+  // US studs: 50 mm in the plane, 150 mm across the wall, ~600 mm along the wall,
+  // standing on the head plate. 50 studs: omit 0° and the two that leave 23 mm
+  // bays at the E/W ring posts (88.3° / 271.7°). Also skip any stud that lands
+  // in a post or leaves a bay of 23 mm or less (cannot take laths or a skin).
   const usStep = (US_SPACING / R) * (180 / Math.PI);
   const postThetas = [0, 90, 180, 270];
+  const US_OMIT = [0, 88.3, 271.7];
+  const US_HALF = 0.025, POST_HALF = 0.100;
+  const MIN_BAY = 0.023;
   for (let th = 0; th < 360 - 0.01; th += usStep) {
-    if (th > SECTION_A0 - 1 && th < SECTION_A1 + 1) continue;
-    if (postThetas.some((p) => {
+    if (US_OMIT.some((o) => {
+      let d = Math.abs(th - o);
+      if (d > 180) d = 360 - d;
+      return d < 0.35;
+    })) continue;
+    let tooTight = false;
+    for (const p of postThetas) {
       let d = Math.abs(th - p);
       if (d > 180) d = 360 - d;
-      return d < 2;
-    })) continue;
+      const gap = d * DEG * R - POST_HALF - US_HALF;
+      if (gap < MIN_BAY) { tooTight = true; break; }
+    }
+    if (tooTight) continue;
     const p = polar(th, R);
     const top = coverFFL(-p.y) - 0.020;
     const h = top - HEAD_TOP;
     if (h < 0.05) continue;
-    const t = th * DEG;
+    const tt = th * DEG;
     const m = addBox(houseGroup, 0.050, h, 0.150, materials.timber, p.x, HEAD_TOP + h / 2, p.y);
-    m.rotation.y = Math.atan2(Math.sin(t), Math.cos(t));
+    m.rotation.y = Math.atan2(Math.sin(tt), Math.cos(tt));
     m.userData.usStud = true;
   }
+
+  // Close the wall up to the beam and the roof in each ring-post sector. The
+  // post itself stops at the beam soffit, so the skipped post wedge was a
+  // see-through hole under the eave (Tom's v1l glitch). Skins still stop on
+  // the post faces below the beam (timber exposed / lime-washed). Above the
+  // beam the sandwich continues, with a 20 mm slip under the covering.
+  function closePostToRoof(theta) {
+    const half = (POST_HALF / R) * 180 / Math.PI;
+    const p = polar(theta, R);
+    const yN = -p.y;
+    const beamSof = soffitFFL(yN);
+    const beamTop = beamTopFFL(yN);
+    const top = coverFFL(yN) - 0.020;
+    const a0 = theta - half, a1 = theta + half;
+    // 25 mm inner / outer skin zones around the beam, so the wall meets it.
+    houseGroup.add(ringBand(R + POST_HALF, rOut, a0, a1, beamSof, beamTop, materials.cob, 3));
+    houseGroup.add(ringBand(rIn, R - POST_HALF, a0, a1, beamSof, beamTop, materials.cobInner, 3));
+    // Full sandwich from the beam top up to the slip (closes the hole above).
+    if (top > beamTop + 0.005) {
+      houseGroup.add(ringBand(rFrameOut, rOut, a0, a1, beamTop, top, materials.cob, 3));
+      houseGroup.add(ringBand(rIn, rFrameIn, a0, a1, beamTop, top, materials.cobInner, 3));
+      houseGroup.add(ringBand(rFrameIn, rFrameOut, a0, a1, beamTop, top, materials.insulation, 3));
+    }
+  }
+  [0, 90, 180, 270].forEach(closePostToRoof);
 
   // Wall fills, windows, doors, members
   const doorDefs = [];
@@ -666,7 +698,8 @@ function buildModel() {
     const frameD = 0.070;
     const frameT = 0.055;
     const clearW = (a1 - a0) * DEG * R;
-    const w = Math.max(0.2, clearW - 0.02);
+    // Frame fills the opening so it meets the posts and mullions (no see-through slit).
+    const w = Math.max(0.2, clearW);
     const h = z1 - z0;
     const group = new THREE.Group();
     // frame as four slim boxes in local space: x along tangent, y up, z radial
@@ -1056,10 +1089,11 @@ function buildModel() {
   const st = G.extStrip;
   addBox(houseGroup, mm(st.w), 0.08, mm(st.y1-st.y0), materials.stone, mm(st.x), GRADE + 0.02, 0);
 
-  // Interior ceiling (CHECK / unconfirmed): 150 mm insulation under the green panel
-  // between the purlins, 50 × 200 joists N–S flush with the purlin soffit at ~600 c/c,
-  // T&G running E–W underneath. House and utility interiors only — not the overhangs.
-  // 20 mm slip at the upper closing; main beams stay fully visible below.
+  // Interior ceiling: 150 mm insulation INSIDE, under the green panel between the
+  // purlins (Tom decided; the insulation-location CHECK is dropped). 50 × 200 joists
+  // N–S flush with the purlin soffit at ~600 c/c, T&G running E–W underneath.
+  // House and utility interiors only — not the overhangs. 20 mm slip at the upper
+  // closing; main beams stay fully visible below. Product / hangers still CHECK.
   const TNG_T = 0.020;
   const ROOF_INS_T = 0.150;
   const JOIST_W = 0.050, JOIST_D = 0.200;
@@ -1177,6 +1211,36 @@ function buildModel() {
   beamHole.lineTo(-BEAM_HALF, hz);
   beamHole.closePath();
   houseShape.holes.push(beamHole);
+
+  // Four interior E–W brace heads at the centre purlin pierced the T&G by 70 mm.
+  // T&G and membrane stop at a trimmed opening with a collar around each brace.
+  const COLLAR_OPEN = 0.180; // 100 mm section at 45° plus clearance
+  const COLLAR_TRIM = 0.022;
+  const COLLAR_THICK = 0.018;
+  const braceHeads = [];
+  braceMeshes.forEach((m) => {
+    const b = m.userData.brace;
+    if (!b || b.dir !== 'E-W') return;
+    const px = mm(b.x), pz = wz(mm(b.y));
+    const endLevel = !((b.dir === 'N-S')) && (function () {
+      const END = new Set(['SW corner', 'SE corner', 'NW corner', 'NE corner', 'SE-ext', 'NE-ext']);
+      return END.has(b.post);
+    })();
+    if (endLevel) return;
+    const headX = px + b.side * 0.600;
+    const headZ = pz;
+    const rho = Math.hypot(headX, headZ);
+    if (rho > rCeil + 0.05) return;
+    braceHeads.push({ x: headX, z: headZ, post: b.post, side: b.side });
+    const h = COLLAR_OPEN / 2;
+    const hole = new THREE.Path();
+    hole.moveTo(headX - h, headZ - h);
+    hole.lineTo(headX + h, headZ - h);
+    hole.lineTo(headX + h, headZ + h);
+    hole.lineTo(headX - h, headZ + h);
+    hole.closePath();
+    houseShape.holes.push(hole);
+  });
   const tngHouse = new THREE.ShapeGeometry(houseShape, 2);
   setSlopedFromShape(tngHouse, yTng0);
   const tngHouseMesh = new THREE.Mesh(tngHouse, materials.tng);
@@ -1184,6 +1248,44 @@ function buildModel() {
   tngHouseMesh.receiveShadow = true;
   tngHouseMesh.userData.ceiling = true;
   houseGroup.add(tngHouseMesh);
+
+  function addBraceCollar(head) {
+    const { x, z } = head;
+    const ySof = tngSoffitFFL(-z);
+    const open = COLLAR_OPEN, trim = COLLAR_TRIM, thk = COLLAR_THICK;
+    const y = ySof - (thk / 2) * Math.cos(7 * DEG);
+    const half = open / 2;
+    const mid = half + trim / 2;
+    const long = open + 2 * trim;
+    const pieces = [
+      [long, trim, x, z + mid],
+      [long, trim, x, z - mid],
+      [trim, open, x + mid, z],
+      [trim, open, x - mid, z]
+    ];
+    pieces.forEach(([sx, sz, cx, cz]) => {
+      const c = addBox(houseGroup, sx, thk, sz, materials.timber, cx, y, cz);
+      c.rotation.x = 7 * DEG;
+      c.castShadow = false;
+      c.userData.braceCollar = true;
+    });
+    // Short lining through the T&G thickness, around the opening.
+    const linH = TNG_T + 0.004;
+    const linY = ySof + (linH / 2) * Math.cos(7 * DEG);
+    const lip = 0.012;
+    [
+      [open + 2 * lip, lip, x, z + half - lip / 2],
+      [open + 2 * lip, lip, x, z - half + lip / 2],
+      [lip, open, x + half - lip / 2, z],
+      [lip, open, x - half + lip / 2, z]
+    ].forEach(([sx, sz, cx, cz]) => {
+      const c = addBox(houseGroup, sx, linH, sz, materials.timber, cx, linY, cz);
+      c.rotation.x = 7 * DEG;
+      c.castShadow = false;
+      c.userData.braceCollar = true;
+    });
+  }
+  braceHeads.forEach(addBraceCollar);
 
   // Utility T&G, inset 20 mm from the inner faces.
   const uCeilX0 = uInX0 + CEIL_GAP, uCeilX1 = uInX1 - CEIL_GAP;
@@ -1668,13 +1770,29 @@ function buildModel() {
     }
     const utilS = tngSoffitFFL(-2.600);
     const utilN = tngSoffitFFL(-0.600);
+    const collaredKeys = new Set(braceHeads.map((h) => h.post + ':' + h.side));
+    braceHits.forEach((h) => {
+      if (h.dir === 'E-W' && collaredKeys.has(h.post + ':' + h.side)) {
+        h.collared = true;
+        h.clash = false;
+      }
+    });
     const hits = braceHits.filter((h) => h.clash);
     return {
-      unconfirmed: true,
+      unconfirmed: false,
+      insulationInside: true,
+      insulationChoiceDecided: true,
       interiorsOnly: true,
       insulation: ROOF_INS_T,
+      productCheck: 'Wood-fibre batts or unfaced Volcalis preferred (product still CHECK). Joist hangers still Connections CHECK.',
       joists: '50 × 200, N–S, flush with purlin soffit, 609 mm c/c house / 550 mm utility',
       tng: TNG_T,
+      collars: {
+        count: braceHeads.length,
+        opening: COLLAR_OPEN,
+        note: 'T&G and membrane stop at a trimmed opening with a timber collar around each of the four interior E–W brace heads at the centre purlin. The 70 mm pierce is resolved; not an open clash.',
+        items: braceHeads
+      },
       soffits: { sInner, sCL, centre, nInner, nCL },
       proposalSoffits: { sInner: 2.905, centre: 3.504, nWall: 4.118 },
       headroomMin: sInner,
@@ -1984,9 +2102,9 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   addHud('Window frame 70 mm in the 150 mm frame', -3.4, 1.55, 3.6, ['heights']);
   addHud('Inner wall 200 mm × 2 355 mm (unconfirmed)', -0.15, 1.35, 2.05, ['heights']);
   addHud('Upper closing 250 mm sandwich (unconfirmed)', 0.55, 2.85, 5.20, ['heights']);
-  addHud('T&G soffit S inner 2 905 mm (unconfirmed)', 0.35, 2.95, 4.55, ['heights']);
-  addHud('T&G soffit centre 3 504 mm (unconfirmed)', -1.05, 3.55, 0.25, ['heights']);
-  addHud('T&G soffit N wall 4 118 mm (unconfirmed)', 0.35, 4.16, -5.05, ['heights']);
+  addHud('T&G soffit S inner 2 905 mm', 0.35, 2.95, 4.55, ['heights']);
+  addHud('T&G soffit centre 3 504 mm', -1.05, 3.55, 0.25, ['heights']);
+  addHud('T&G soffit N wall 4 118 mm', 0.35, 4.16, -5.05, ['heights']);
   addHud('Door head 2 375 mm', -5.3, 2.40, -0.3, ['heights']);
   addHud('Head plate top 2 475 mm', -5.3, 2.55, -0.9, ['heights']);
   addHud(`Utility plate ${fmtMm(plateTop)} mm`, 6.6, 2.50, 1.15, ['heights']);
@@ -2630,7 +2748,7 @@ async function init() {
   orbit.target.set(START_CAM.tx, START_CAM.ty, START_CAM.tz);
   orbit.enableDamping = true;
   orbit.dampingFactor = 0.08;
-  orbit.maxPolarAngle = Math.PI * 0.49;
+  orbit.maxPolarAngle = Math.PI * 0.85; // allow looking up at the ceiling and brace collars
   orbit.minDistance = 2;
   orbit.maxDistance = 36;
   orbit.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
