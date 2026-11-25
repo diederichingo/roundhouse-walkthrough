@@ -1,5 +1,5 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1f. Rev 2026-11-25f.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1g. Rev 2026-11-25f (end-post level braces flush).
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
@@ -750,11 +750,22 @@ function buildModel() {
 
   // Knee braces
   const braceMeshes = [];
+  const END_POSTS = new Set(['SW corner', 'SE corner', 'NW corner', 'NE corner', 'SE-ext', 'NE-ext']);
   function addBrace(b) {
     const px = mm(b.x), pz = wz(mm(b.y));
     const postSoffit = soffitFFL(mm(b.y)); // main beam soffit at this northing
-    const purlinSof = coverFFL(mm(b.y)) - 0.200;
     const alongBeam = b.dir === 'N-S';
+    // 12 level (E–W) braces on the six end posts sit flush with the outer post
+    // face (y 6000–6100, mirrored on the south): 50 mm bearing under the eave purlin.
+    const endLevel = !alongBeam && END_POSTS.has(b.post);
+    let purlinY = mm(b.y);
+    let zBrace = pz;
+    if (endLevel) {
+      const outward = Math.sign(mm(b.y)) || 1; // drawing +y = north
+      purlinY = outward * 6.125;
+      zBrace = pz - outward * 0.050; // world z = −y
+    }
+    const purlinSof = coverFFL(purlinY) - 0.200;
     const topSof = alongBeam ? postSoffit : purlinSof;
     const foot = topSof - 0.600;
     const s = b.side; // +1 north or east
@@ -772,10 +783,6 @@ function buildModel() {
       const midZ = pz - s * tHoriz / 2;
       const midY = foot + 0.600 / 2;
       m.position.set(px, midY, midZ);
-      // rotate around X so local +Z aligns with (0, 0.6, s*tHoriz)
-      const ang = Math.atan2(0.600, s * tHoriz) - Math.PI / 2;
-      // default +Z is north. We want direction (0, 0.6, s*tHoriz) from south foot to north/south end.
-      // Direction vector from foot to beam: (0, 0.6, s*tHoriz). Angle from +Z toward +Y: 
       m.rotation.set(0, 0, 0);
       const dir = new THREE.Vector3(0, 0.600, -s * tHoriz).normalize();
       const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
@@ -783,7 +790,7 @@ function buildModel() {
     } else {
       const midX = px + s * tHoriz / 2;
       const midY = foot + 0.300;
-      m.position.set(midX, midY, pz);
+      m.position.set(midX, midY, zBrace);
       const dir = new THREE.Vector3(s * tHoriz, 0.600, 0).normalize();
       const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
       m.quaternion.copy(quat);
@@ -1018,26 +1025,36 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
     }
   });
 
-  // S inside brace (indoor, at the 2.0 m limit after the raise)
+  // S inside brace: 1 999 mm, accepted by Roundhouse as 2.00 m (within tolerance).
   const sInside = indoorLow.find((r) => r.brace.post === 'S ring' && r.brace.dir === 'N-S' && r.brace.side === 1)
-    || indoorLow.find((r) => r.brace.post === 'S ring');
+    || indoorLow.find((r) => r.brace.post === 'S ring')
+    || (function () {
+      const m = braceMeshes.find((mm) => {
+        const b = mm.userData.brace;
+        return b && b.post === 'S ring' && b.dir === 'N-S' && b.side === 1;
+      });
+      return m ? { mesh: m, brace: m.userData.brace, under: m.userData.underside, midX: m.position.x, midZ: m.position.z } : null;
+    })();
+  const accepted = [];
   if (sInside) {
-    highlight(sInside.mesh, sInside.atLimit || Math.abs(sInside.under - LIMIT) <= EPS ? materials.clashAmber : materials.clash);
-    const underMm = fmtMm(sInside.under);
-    const atLim = sInside.atLimit || Math.abs(sInside.under - LIMIT) <= EPS;
-    computedClashes.push({
+    accepted.push({
       id: 's-brace',
-      severity: atLim ? 'amber' : 'red',
       title: 'S inside brace',
-      detail: atLim
-        ? `Underside ${underMm} mm — at the 2.0 m indoor headroom limit.`
-        : `Underside ${underMm} mm, below the 2.0 m indoor headroom limit.`,
+      detail: `S inside brace ${fmtMm(sInside.under)} mm, accepted as 2.00 m (within tolerance)`,
       under: sInside.under
     });
-    CLASH_VIEWS['s-brace'] = {
-      cam: { x: 2.35, y: 1.68, z: 2.15, tx: 0.15, ty: 1.92, tz: 4.55 }
-    };
   }
+  indoorLow.forEach((r) => {
+    if (sInside && r.mesh === sInside.mesh) return;
+    highlight(r.mesh, materials.clash);
+    computedClashes.push({
+      id: `indoor-brace-${r.brace.post}`,
+      severity: 'red',
+      title: `${r.brace.post} brace`,
+      detail: `Underside ${fmtMm(r.under)} mm, below the 2.0 m indoor headroom limit.`,
+      under: r.under
+    });
+  });
 
   // Outdoor S-corner N–S braces (~1 877 mm) were accepted by Tom on 25 Nov 2026
   // (rev f): not a drawn clash, off the open list. Record only; do not highlight.
@@ -1133,6 +1150,17 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
     eastEwBraces: eastEw,
     eaves: { south: coverFFL(eaveS), north: coverFFL(eaveN), seGap, neGap }
   };
+  if (Object.values(outdoorAccepted).length) {
+    const items = Object.values(outdoorAccepted).sort((a, b) => a.under - b.under);
+    const mmList = items.map((it) => `${it.post} ${fmtMm(it.under)} mm`).join('; ');
+    accepted.push({
+      id: 'outdoor-corners',
+      title: 'Outdoor walkway headroom',
+      detail: `Outdoor SW / SE / SE-ext N–S braces at ${fmtMm(items[0].under)} mm, accepted (not a drawn clash). ${mmList}.`,
+      under: items[0].under
+    });
+  }
+  computedClashes.accepted = accepted;
 
   // 2.0 m headroom planes
   function makePlane(name, x, z, visible) {
@@ -1176,9 +1204,7 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   addHud(`East beam soffit centre ${fmtMm(soffitFFL(0))} mm`, 9.0, soffitFFL(0) + 0.04, 0, ['heights']);
   addHud(`East beam soffit N ${fmtMm(soffitFFL(5))} mm`, 9.0, soffitFFL(5) + 0.04, -5.05, ['heights']);
   if (sInside) {
-    addHud(`S inside brace underside ${fmtMm(sInside.under)} mm`, 0.85, sInside.under + 0.04, 4.35, ['heights', 's-brace']);
-    addHud('2.0 m headroom plane', -0.85, 2.00, 3.55, ['s-brace']);
-    addHud(`At the 2.0 m indoor limit (${fmtMm(sInside.under)} mm)`, 0.95, 1.70, 4.75, ['s-brace']);
+    addHud(`S inside brace underside ${fmtMm(sInside.under)} mm`, 0.85, sInside.under + 0.04, 4.35, ['heights']);
   }
   if (ewUnder != null) {
     addHud(`E/W brace underside ${fmtMm(ewUnder)} mm`, -4.45, ewUnder + 0.04, -0.85, ['heights']);
@@ -1210,10 +1236,18 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
 function fillClashPanel() {
   const list = document.getElementById('clashList');
   const presets = document.getElementById('presets');
+  const acceptedList = document.getElementById('acceptedList');
   if (!list || !presets) return;
   list.innerHTML = '';
   presets.innerHTML = '';
-  (computedClashes || []).forEach((c) => {
+  const open = computedClashes || [];
+  if (!open.length) {
+    const li = document.createElement('li');
+    li.className = 'none';
+    li.textContent = 'None.';
+    list.appendChild(li);
+  }
+  open.forEach((c) => {
     const li = document.createElement('li');
     li.className = c.severity || 'red';
     li.innerHTML = `<strong>${c.title}</strong> — ${c.detail}`;
@@ -1226,6 +1260,16 @@ function fillClashPanel() {
     btn.innerHTML = `${c.title}<small>${c.detail}</small>`;
     presets.appendChild(btn);
   });
+  if (acceptedList) {
+    acceptedList.innerHTML = '';
+    (computedClashes.accepted || []).forEach((c) => {
+      const li = document.createElement('li');
+      li.textContent = c.detail;
+      acceptedList.appendChild(li);
+    });
+    const wrap = document.getElementById('acceptedWrap');
+    if (wrap) wrap.hidden = !(computedClashes.accepted || []).length;
+  }
 }
 
 function makeLabel(text) {

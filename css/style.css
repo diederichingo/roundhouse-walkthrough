@@ -202,3 +202,15 @@ body.walk.touch #hint { left: 156px; }
 #clashList li.red strong { color: var(--clash); }
 #clashList li.amber strong { color: #e3a02a; }
 #presets button.amber[aria-pressed="true"] { background: #6a4a16; border-color: #e3a02a; }
+
+.accepted-h {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+#acceptedList { margin: 0 0 8px; padding-left: 18px; font-size: 12px; color: var(--muted); }
+#acceptedList li { margin: 0 0 6px; }
+#clashList li.none { color: var(--muted); list-style: none; margin-left: -18px; }
