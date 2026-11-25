@@ -1,6 +1,6 @@
 /**
  * Interior set dressing for the Option B walkthrough (v1h):
- * scale figures, a 1.40 × 2.00 m bed, and a small living-room grouping.
+ * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch, table, Eames lounge).
  * Pieces are typical sizes for a sense of space, not from the drawings.
  */
 import * as THREE from 'three';
@@ -248,25 +248,6 @@ function addEamesLounge(parent, mats) {
   return g;
 }
 
-function addEamesOttoman(parent, mats) {
-  // 660 W × 540 D × 380 H
-  const g = new THREE.Group();
-  const W = 0.66, D = 0.54, H = 0.38;
-  for (const x of [-(W / 2 - 0.08), W / 2 - 0.08]) {
-    for (const z of [-(D / 2 - 0.08), D / 2 - 0.08]) {
-      cyl(g, 0.02, 0.024, 0.12, mats.metal, x, 0.06, z, 0, 0, 0, 8);
-    }
-  }
-  // walnut saucer
-  cyl(g, W * 0.46, W * 0.42, 0.05, mats.walnut, 0, 0.16, 0, 0, 0, 0, 16);
-  box(g, W * 0.9, 0.04, D * 0.9, mats.walnut, 0, 0.20, 0);
-  // leather cushion
-  box(g, W * 0.82, 0.12, D * 0.78, mats.leather, 0, 0.28, 0);
-  cyl(g, 0.28, 0.30, 0.10, mats.leather, 0, 0.33, 0, 0, 0, 0, 16);
-  g.userData.size = { w: W, d: D, h: H };
-  parent.add(g);
-  return g;
-}
 
 function aabbCollider(colliders, x0, x1, z0, z1) {
   colliders.push({ type: 'aabb', x0, x1, z0, z1 });
@@ -319,40 +300,34 @@ export function furnishInterior(ctx) {
   addHud('1.70 m', bX + 0.10, 1.76, bZ + 0.18, ['heights', 'bathroom-person']);
 
   // ——— Living room grouping, SW bay, south of the garden-door path ———
-  // Couch 1600 × 850 × 800, back toward the curved wall, facing west (garden).
-  // Coffee table 900 × 500 × 400 in front. Eames lounge + ottoman opposite, facing the couch.
-  // Compact face-to-face grouping, sofa against the curved wall, Eames clear of the west wall.
-  // Chair west −4.00, stack ~3.08 m, couch back ≈ −0.92 (against the curve).
+  // Couch 1600 × 850 × 800, coffee table 900 × 500 × 400, Eames lounge opposite.
+  // Couch nudged 50 mm south so the walkway to the garden doors is 800 mm.
+  // Also 20 mm west so the south end stays just off the curved wall.
   const couch = addCouch(houseGroup, mats, 1.60, 0.85, 0.80);
-  couch.position.set(-1.345, 0, 1.55);
+  couch.position.set(-1.370, 0, 1.60);
   couch.rotation.y = -Math.PI / 2; // back to +X (curved wall), front to −X (garden)
 
   const table = addCoffeeTable(houseGroup, mats, 0.90, 0.50, 0.40);
-  table.position.set(-2.20, 0, 1.55);
+  table.position.set(-2.245, 0, 1.60);
   table.rotation.y = -Math.PI / 2; // 900 along Z, 500 along X
 
-  const ott = addEamesOttoman(houseGroup, mats);
-  ott.position.set(-2.84, 0, 1.50);
-  ott.rotation.y = -Math.PI / 2; // front faces +X (table / couch)
-
   const lounge = addEamesLounge(houseGroup, mats);
-  lounge.position.set(-3.575, 0, 1.50);
+  // Closer to the table now the ottoman is gone (~400 mm gap).
+  lounge.position.set(-3.295, 0, 1.60);
   lounge.rotation.y = -Math.PI / 2;
 
-  aabbCollider(colliders, -1.345 - 0.425, -1.345 + 0.425, 1.55 - 0.80, 1.55 + 0.80);
-  aabbCollider(colliders, -2.20 - 0.25, -2.20 + 0.25, 1.55 - 0.45, 1.55 + 0.45);
-  aabbCollider(colliders, -2.84 - 0.27, -2.84 + 0.27, 1.50 - 0.33, 1.50 + 0.33);
-  aabbCollider(colliders, -3.575 - 0.425, -3.575 + 0.425, 1.50 - 0.42, 1.50 + 0.42);
+  aabbCollider(colliders, -1.370 - 0.425, -1.370 + 0.425, 1.60 - 0.80, 1.60 + 0.80);
+  aabbCollider(colliders, -2.245 - 0.25, -2.245 + 0.25, 1.60 - 0.45, 1.60 + 0.45);
+  aabbCollider(colliders, -3.295 - 0.425, -3.295 + 0.425, 1.60 - 0.42, 1.60 + 0.42);
 
   return {
     kitchenPerson: { x: kX, z: kZ, height: 1.80 },
     bathroomPerson: { x: bX, z: bZ, height: 1.70 },
     bed: { x0: bedX0, x1: bedX1, z0: bedZ0, z1: bedZ1, w: bedW, l: bedL, h: BED_H },
     living: {
-      couch: { x: -1.345, z: 1.55, w: 1.60, d: 0.85, h: 0.80, back: -0.92, front: -1.77 },
-      table: { x: -2.20, z: 1.55, w: 0.90, d: 0.50, h: 0.40 },
-      ottoman: { x: -2.84, z: 1.50, w: 0.66, d: 0.54, h: 0.38 },
-      lounge: { x: -3.575, z: 1.50, w: 0.84, d: 0.85, h: 0.83, west: -4.00 }
+      couch: { x: -1.370, z: 1.60, w: 1.60, d: 0.85, h: 0.80, back: -0.945, front: -1.795, north: 0.80 },
+      table: { x: -2.245, z: 1.60, w: 0.90, d: 0.50, h: 0.40 },
+      lounge: { x: -3.295, z: 1.60, w: 0.84, d: 0.85, h: 0.83, west: -3.720 }
     }
   };
 }
@@ -368,7 +343,7 @@ export const VIEW_CAMS = {
   },
   living: {
     label: 'Living room',
-    cam: { x: -3.90, y: 1.70, z: 0.35, tx: -2.30, ty: 0.40, tz: 1.55 }
+    cam: { x: -3.90, y: 1.70, z: 0.30, tx: -2.30, ty: 0.40, tz: 1.60 }
   },
   bedroom: {
     label: 'Bedroom',

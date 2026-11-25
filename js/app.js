@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1h. Rev 2026-11-25f.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1i. Rev 2026-11-25f.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1h';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1i';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
