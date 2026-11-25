@@ -4,8 +4,8 @@ Every item below is an assumption used in the 3D model. Confirmed dimensions com
 
 ## Instructed assumptions (from the build brief)
 
-- House and utility walls are modelled as **350 mm cob**, centred on the centreline. Tom wants this called just “cob” with no stated thickness; 350 mm is a modelling assumption only and is not labelled in the walkthrough except in the Assumed list.
-- Curved inner wall thickness: **250 mm**, centred on the drawn arc.
+- House, utility and the kitchen under-sill walls are a **250 mm sandwich**: 150 mm timber frame with insulation and up to 50 mm cob/plaster skin each face, centred on the centreline, on the 400 mm plinth (75 mm reveal each side). Confirmed by Roundhouse Control, 25 Nov 2026. The outer finish is still called cob/plaster.
+- Curved inner wall: **200 mm × 2 355 mm (unconfirmed / CHECK)** — 100 mm frame + 50 mm skin each face, flush with the 200 mm plinth, from plinth top (20 mm AFF) to the outer head-plate soffit (2 375 mm AFF). **100 × 50 sole on DPC**, **100 × 50 head** (closing plate, not tied to the roof), **100 × 100 × 2 355 mm** full-height end post on the plinth. Intermediate 100 mm studs are not added (battens do that work; CHECK if Joshua adds 100 × 50 studs later). Interior partitions that are not this wall stay 2 200 mm.
 - Kitchen window: **900 mm wide × 1 100 mm high**, sill **1 200** (size and sill still assumed), against the N post, above the counter. The window top is the confirmed **2 300 mm** (all window tops at one height).
 - Finished floor level: **180 mm above grade** (drawn provisional in the plan).
 - Green sandwich roof panel thickness: **60 mm**, measured normal to the 7° plane.
@@ -14,7 +14,7 @@ Every item below is an assumption used in the 3D model. Confirmed dimensions com
 
 ## Further assumptions made to build the model
 
-- Curved inner wall and unfounded interior partitions (bathroom / bed wall, shower / closet wall, closet sides) are **2 200 mm** high above FFL.
+- Unfounded interior partitions (bathroom / bed wall, shower / closet wall, closet sides) stay **2 200 mm** high above FFL. The curved inner wall is **2 355 mm** from the plinth (top 2 375 mm AFF), unconfirmed.
 - Unfounded partition thickness: **100 mm**.
 - Closet and bed blocks follow Els’s floor-plan sketch, converted from the same sketch coordinates used on A-07 / B-06. The drawings say that furniture is **not to scale**; positions are therefore indicative.
 - Bed height: **450 mm**. Mattress / bed simple block, no bedding detail.
@@ -27,7 +27,7 @@ Every item below is an assumption used in the 3D model. Confirmed dimensions com
 - Utility south door: opening height **2 100 mm** (dimensioned on B-13); leaf hinged on the west jamb (SW post); opens outward to 90°.
 - Window operation: windows are **fixed glass** (opening type is not in the drawings). Only doors animate.
 - Fitting gap **15 mm** each side of each unit, as drawn (fabricator still to confirm).
-- Upper closing: non-load-bearing cob/render from the head-plate top (2 475 mm) up to the roof underside minus the **20 mm** slip joint, following the 7° plane with y.
+- Upper closing: non-load-bearing **250 mm sandwich** (unconfirmed / CHECK) from the head-plate soffit/top up to the roof underside minus the **20 mm** slip joint, following the 7° plane with y. US 150 × 50 (was 100 × 50), 150 mm across the wall, with skins on both faces.
 - Mullions: modelled with the drawn radial taper (30 mm inside, 55–72 mm outside, 150 mm deep).
 - Knee braces: **100 × 100 mm**, 45°, legs **600 mm** to the member centreline. Along the sloped main beams the uphill brace is longer (cut to the 7° soffit). Radial braces at E / W / corners / extension meet the **purlin soffit**; along-wall braces at E / W and the N–S braces at N / S / centre meet the **main-beam soffit**.
 - Post bases: 100 mm galvanised stand-off, as drawn. Corner pads top **50 mm above grade**. Centre pad top flush with FFL. Extension pedestals top level with the 400 mm plinth.
@@ -105,3 +105,16 @@ The S inside brace underside of **1 999 mm** is accepted by Roundhouse as **2.00
 - A 1.70 m woman (about 40, brown hair, leopard print) stands in the free floor of the bathroom, to show room to move. Label: `1.70 m`.
 - The bed mattress footprint is set to exactly 1.40 × 2.00 m (head against the closet, east side against the bathroom partition), about 480 mm high. On Els’s furniture sketch it had been about 1 515 × 1 788 mm × 450 mm high (the sketch is noted as not to scale). Label: `1.40 x 2.00 m`.
 - The living room grouping (two-seat couch about 1 600 × 850 × 800, coffee table 900 × 500 × 400, Eames lounge 840 × 850 × 830, dark leather and walnut) is typical furniture for a sense of space, not from the drawings. It sits in the south-west bay, south of the path to the west garden doors. The Eames ottoman that was in v1h was removed in v1i. The walkway from the couch to the garden-door south jamb is 800 mm.
+
+
+## v1j — sandwich walls (Roundhouse Control, 25 Nov 2026)
+
+Walls are no longer solid cob. Source: `drawings_optionB/wall_buildup_proposal.md`.
+
+- House bays, utility and the kitchen under-sill: **150 mm frame + 50 + 50 mm skins = 250 mm**, covering the 200 × 200 mm posts (25 mm cob cover each side; posts are not proud of the wall). 25 mm proud of the 150 mm frame, with 25 mm cob over the post face.
+- Window frames **70 mm**, sitting in the 150 mm timber frame, not the full 250 mm. About 50 mm cob/lime reveal and 40 mm timber each side. The proposal flags that 70 mm does not span 250 mm, so a lining or deeper frame may be needed (CHECK).
+- 13 big + 2 small windows have **no under-sill sandwich**; a 15 mm packer sits on the sole. The walkthrough keeps the assumed 400 mm sill, so there is a 15 mm gap between packer top (385 mm) and sill. The kitchen window keeps the under-sill sandwich; its sill stays at the assumed **1 200 mm** (the proposal notes a sill rail top of 1 185 mm AFF).
+- Insulation product is still CHECK (candidate A, 150 mm expanded cork, preferred). The 50 mm skin is the example maximum (CHECK with Matilde).
+- Upper closing is the same **250 mm sandwich** (unconfirmed / CHECK): the US member changes from **100 × 50 to 150 × 50**, 150 mm across the wall, flush with both faces of the 150 mm head plate (previously 25 mm shy of each face). Skins (≤ 50 mm) on both faces. The 20 mm slip joint stays; laths and skins stop short of the moving roof. Skins and cavity run past the head plate so it is not a cold band. Position is unchanged (centred on R = 5.0, from the head-plate top at 2 475 mm to the roof underside minus 20 mm). The closing is non-load-bearing and is built around the main beams and the along-wall braces; beam bearing stays on the posts.
+- Head-plate remains 150 mm; the skins project 50 mm past it and continue to the roof, by design. Knee braces on the ring posts pass through the 25 mm cob that covers the inner post face — a local stop in the skin, not a structural clash.
+- Inner wall height is **2 355 mm** from the 20 mm plinth (top 2 375 mm AFF), with a 100 × 50 sole on DPC, a 100 × 50 head and a 100 × 100 full-height end post, all unconfirmed / CHECK.

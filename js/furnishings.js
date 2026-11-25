@@ -1,5 +1,5 @@
 /**
- * Interior set dressing for the Option B walkthrough (v1h):
+ * Interior set dressing for the Option B walkthrough (v1j):
  * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch, table, Eames lounge).
  * Pieces are typical sizes for a sense of space, not from the drawings.
  */
@@ -304,7 +304,7 @@ export function furnishInterior(ctx) {
   // Couch nudged 50 mm south so the walkway to the garden doors is 800 mm.
   // Also 20 mm west so the south end stays just off the curved wall.
   const couch = addCouch(houseGroup, mats, 1.60, 0.85, 0.80);
-  couch.position.set(-1.370, 0, 1.60);
+  couch.position.set(-1.420, 0, 1.60);
   couch.rotation.y = -Math.PI / 2; // back to +X (curved wall), front to −X (garden)
 
   const table = addCoffeeTable(houseGroup, mats, 0.90, 0.50, 0.40);
@@ -325,7 +325,7 @@ export function furnishInterior(ctx) {
     bathroomPerson: { x: bX, z: bZ, height: 1.70 },
     bed: { x0: bedX0, x1: bedX1, z0: bedZ0, z1: bedZ1, w: bedW, l: bedL, h: BED_H },
     living: {
-      couch: { x: -1.370, z: 1.60, w: 1.60, d: 0.85, h: 0.80, back: -0.945, front: -1.795, north: 0.80 },
+      couch: { x: -1.420, z: 1.60, w: 1.60, d: 0.85, h: 0.80, back: -0.995, front: -1.845, north: 0.80 },
       table: { x: -2.245, z: 1.60, w: 0.90, d: 0.50, h: 0.40 },
       lounge: { x: -3.295, z: 1.60, w: 0.84, d: 0.85, h: 0.83, west: -3.720 }
     }
@@ -348,5 +348,13 @@ export const VIEW_CAMS = {
   bedroom: {
     label: 'Bedroom',
     cam: { x: -0.15, y: 1.70, z: 1.40, tx: 1.55, ty: 0.40, tz: 1.60 }
+  },
+  'window-reveal': {
+    label: 'Window reveal',
+    cam: { x: 0.52, y: 1.68, z: -4.58, tx: 0.92, ty: 1.62, tz: -4.98 }
+  },
+  'post-coverage': {
+    label: 'Post coverage',
+    cam: { x: 1.15, y: 1.40, z: 5.65, tx: 0.05, ty: 1.15, tz: 5.02 }
   }
 };

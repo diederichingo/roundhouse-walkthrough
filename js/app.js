@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1i. Rev 2026-11-25f.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1j. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1i';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1j';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -136,6 +136,10 @@ function makeMaterials() {
   });
   materials.cobInner = new THREE.MeshStandardMaterial({
     map: textures.cob, color: 0xe8d3b0, roughness: 0.95, metalness: 0.0
+  });
+  // Insulation in the 150 mm frame (cork-like; product still CHECK).
+  materials.insulation = new THREE.MeshStandardMaterial({
+    color: 0xc4a56a, roughness: 0.92, metalness: 0.0
   });
   materials.timber = new THREE.MeshStandardMaterial({
     map: textures.timber, color: 0xd2a878, roughness: 0.68, metalness: 0.0
@@ -401,10 +405,16 @@ function buildModel() {
   measureGroup = new THREE.Group();
   scene.add(houseGroup, clashGroup, labelGroup, measureGroup);
 
-  const WALL_T = 0.350;
+  // Sandwich wall: 150 mm timber frame + up to 50 mm cob/plaster skin each face.
+  // House bays, utility and the kitchen under-sill: T = 250 mm. Inner wall 200 mm (CHECK).
+  const FRAME_T = 0.150;
+  const SKIN_T = 0.050;
+  const WALL_T = FRAME_T + 2 * SKIN_T; // 0.250
   const R = 5.0;
-  const rIn = R - WALL_T / 2;
-  const rOut = R + WALL_T / 2;
+  const rIn = R - WALL_T / 2;        // 4.875
+  const rOut = R + WALL_T / 2;       // 5.125
+  const rFrameIn = R - FRAME_T / 2;  // 4.925
+  const rFrameOut = R + FRAME_T / 2; // 5.075
   const rPlIn = R - 0.200;
   const rPlOut = R + 0.200;
   const FFL = 0;
@@ -416,7 +426,35 @@ function buildModel() {
   const HEAD_SOF = 2.375;
   const HEAD_TOP = 2.475;
   const K_SILL = 1.200;
-  const CURVE_T = 0.250;
+  const CURVE_T = 0.200; // inner wall, UNCONFIRMED (proposal CHECK: 100 mm frame + 2×50 mm skins)
+  const PACKER = 0.015;  // proposal: 15 mm packer on the sole under windows with no under-sill
+  // Didactic section just east of the S ring post, so the sandwich and 25 mm post cover can be read.
+  const SECTION_A0 = 1.20, SECTION_A1 = 3.60;
+
+  function rangesExceptSection(a0, a1) {
+    if (a1 < a0) a1 += 360;
+    const out = [];
+    if (a1 <= SECTION_A0 || a0 >= SECTION_A1) out.push([a0, a1]);
+    else {
+      if (a0 < SECTION_A0) out.push([a0, Math.min(a1, SECTION_A0)]);
+      if (a1 > SECTION_A1) out.push([Math.max(a0, SECTION_A1), a1]);
+    }
+    return out.filter(([x, y]) => y - x > 0.05);
+  }
+
+  function sandwichRing(a0, a1, y0, y1, segs = 8) {
+    // Outer cob/plaster, insulation in the 150 mm frame, inner cob/plaster.
+    // End caps at openings (and at the S-post section) give a layered reveal.
+    // Core avoids the sole / head plate.
+    for (const [b0, b1] of rangesExceptSection(a0, a1)) {
+      houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, y0, y1, materials.cob, segs));
+      const coreY0 = Math.max(y0, SOLE_TOP), coreY1 = Math.min(y1, HEAD_SOF);
+      if (coreY1 > coreY0 + 1e-4) {
+        houseGroup.add(ringBand(rFrameIn, rFrameOut, b0, b1, coreY0, coreY1, materials.insulation, segs));
+      }
+      houseGroup.add(ringBand(rIn, rFrameIn, b0, b1, y0, y1, materials.cobInner, segs));
+    }
+  }
 
   // Ground
   const ground = addBox(houseGroup, 40, 0.08, 40, materials.ground, 2, GRADE - 0.04, 0);
@@ -477,7 +515,9 @@ function buildModel() {
     const a0 = s.th0 + (v0 ? memberHalfDeg(v0) : 0);
     const a1 = s.th1 - (v1 ? memberHalfDeg(v1) : 0);
     if (a1 > a0 + 0.05) {
-      houseGroup.add(ringBand(R - 0.075, R + 0.075, a0, a1, PL_TOP, SOLE_TOP, materials.timber, 8));
+      for (const [b0, b1] of rangesExceptSection(a0, a1)) {
+        houseGroup.add(ringBand(R - 0.075, R + 0.075, b0, b1, PL_TOP, SOLE_TOP, materials.timber, 8));
+      }
     }
   });
 
@@ -488,14 +528,18 @@ function buildModel() {
     const a0 = s.th0 + (v0 && v0.member === 'post' ? memberHalfDeg(v0) : 0);
     const a1 = s.th1 - (v1 && v1.member === 'post' ? memberHalfDeg(v1) : 0);
     if (a1 > a0 + 0.05) {
-      houseGroup.add(ringBand(R - 0.075, R + 0.075, a0, a1, HEAD_SOF, HEAD_TOP, materials.timber, 8));
+      for (const [b0, b1] of rangesExceptSection(a0, a1)) {
+        houseGroup.add(ringBand(R - 0.075, R + 0.075, b0, b1, HEAD_SOF, HEAD_TOP, materials.timber, 8));
+      }
     }
   });
 
-  // Upper closing — follow roof underside minus 20 mm slip
+  // Upper closing sandwich (CHECK / unconfirmed): 150 mm US frame + 50 mm skins each face,
+  // same 250 mm as the wall below. Skins and cavity run past the head plate so it is not a
+  // cold band. 20 mm slip joint stays; laths and skins stop short of the moving roof.
+  // US member is 150 × 50 (was 100 × 50), 150 mm across the wall, flush with the head plate.
+  const US_SPACING = 0.600;
   segs.forEach((s) => {
-    const v0 = verts.find((v) => Math.abs(v.theta - s.th0) < 1e-4);
-    const v1 = verts.find((v) => Math.abs(v.theta - s.th1) < 1e-4) || (s.th1 >= 359.9 ? verts[0] : null);
     const a0 = s.th0;
     const a1 = s.th1;
     const n = Math.max(3, Math.ceil((a1 - a0) / 8));
@@ -504,11 +548,36 @@ function buildModel() {
       const t1 = a0 + (a1 - a0) * ((i + 1) / n);
       const mid = polar((t0 + t1) / 2, R);
       const top = coverFFL(-mid.y) - 0.020;
-      if (top > HEAD_TOP + 0.02) {
-        houseGroup.add(ringBand(rIn, rOut, t0, t1, HEAD_TOP, top, materials.cob, 3));
+      if (top > HEAD_SOF + 0.02) {
+        for (const [b0, b1] of rangesExceptSection(t0, t1)) {
+          houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, HEAD_SOF, top, materials.cob, 3));
+          houseGroup.add(ringBand(rIn, rFrameIn, b0, b1, HEAD_SOF, top, materials.cobInner, 3));
+          if (top > HEAD_TOP + 0.02) {
+            houseGroup.add(ringBand(rFrameIn, rFrameOut, b0, b1, HEAD_TOP, top, materials.insulation, 3));
+          }
+        }
       }
     }
   });
+  // US studs, 150 × 50, 150 mm radial, ~600 mm along the wall, standing on the head plate.
+  const usStep = (US_SPACING / R) * (180 / Math.PI);
+  const postThetas = [0, 90, 180, 270];
+  for (let th = 0; th < 360 - 0.01; th += usStep) {
+    if (th > SECTION_A0 - 1 && th < SECTION_A1 + 1) continue;
+    if (postThetas.some((p) => {
+      let d = Math.abs(th - p);
+      if (d > 180) d = 360 - d;
+      return d < 2;
+    })) continue;
+    const p = polar(th, R);
+    const top = coverFFL(-p.y) - 0.020;
+    const h = top - HEAD_TOP;
+    if (h < 0.05) continue;
+    const t = th * DEG;
+    const m = addBox(houseGroup, 0.050, h, 0.150, materials.timber, p.x, HEAD_TOP + h / 2, p.y);
+    m.rotation.y = Math.atan2(Math.sin(t), Math.cos(t));
+    m.userData.usStud = true;
+  }
 
   // Wall fills, windows, doors, members
   const doorDefs = [];
@@ -522,15 +591,15 @@ function buildModel() {
 
     const kind = s.kind;
     if (kind === 'cob') {
-      houseGroup.add(ringBand(rIn, rOut, a0, a1, PL_TOP, HEAD_SOF, materials.cob, 8));
+      sandwichRing(a0, a1, PL_TOP, HEAD_SOF, 8);
     } else if (kind === 'big' || kind === 'small') {
-      houseGroup.add(ringBand(rIn, rOut, a0, a1, PL_TOP, SILL, materials.cob, 6));
-      houseGroup.add(ringBand(rIn, rOut, a0, a1, WIN_HEAD, HEAD_SOF, materials.cob, 4));
-      // frame + glass
+      // No under-sill sandwich (proposal): sole + 15 mm packer only; 13 big + 2 small stay as drawn.
+      houseGroup.add(ringBand(rFrameIn, rFrameOut, a0, a1, SOLE_TOP, SOLE_TOP + PACKER, materials.timber, 4));
+      sandwichRing(a0, a1, WIN_HEAD, HEAD_SOF, 4);
       addWindow(a0, a1, SILL, WIN_HEAD, kind === 'big' ? 1.27 : 0.72, 1.90);
     } else if (kind === 'kitchen') {
-      houseGroup.add(ringBand(rIn, rOut, a0, a1, PL_TOP, K_SILL, materials.cob, 6));
-      houseGroup.add(ringBand(rIn, rOut, a0, a1, WIN_HEAD, HEAD_SOF, materials.cob, 4));
+      sandwichRing(a0, a1, PL_TOP, K_SILL, 6);
+      sandwichRing(a0, a1, WIN_HEAD, HEAD_SOF, 4);
       addWindow(a0, a1, K_SILL, WIN_HEAD, 0.90, 1.10);
     } else if (kind === 'gardendoor' || kind === 'backdoor') {
       addDoorOpening(s, a0, a1, kind);
@@ -577,7 +646,7 @@ function buildModel() {
     group.position.set(p.x, 0, p.y);
     group.rotation.y = Math.atan2(nx, nz);
     // threshold, jambs and head so the opening reads as a door
-    addBox(group, clearW, 0.040, 0.350, materials.timber, 0, 0.020, 0);
+    addBox(group, clearW, 0.040, WALL_T, materials.timber, 0, 0.020, 0);
     addBox(group, 0.070, openingH, 0.070, materials.timber, -clearW / 2 + 0.035, openingH / 2, 0);
     addBox(group, 0.070, openingH, 0.070, materials.timber,  clearW / 2 - 0.035, openingH / 2, 0);
     addBox(group, clearW, 0.070, 0.070, materials.timber, 0, openingH - 0.035, 0);
@@ -606,8 +675,13 @@ function buildModel() {
       // We'll position after we know local axes — put side at -clearW/2 + sideW/2
       side.position.set(-clearW / 2 + sideW / 2, (0.400 + 2.300) / 2, 0);
       group.add(side);
-      // cob/sill under side light
-      addBox(group, sideW, 0.400, WALL_T, materials.cob, -clearW / 2 + sideW / 2, 0.200, 0);
+      // Sandwich under the back-door side light (local +Z is outward).
+      {
+        const sx = -clearW / 2 + sideW / 2;
+        addBox(group, sideW, 0.400, SKIN_T, materials.cob, sx, 0.200, WALL_T / 2 - SKIN_T / 2);
+        addBox(group, sideW, 0.400, FRAME_T, materials.insulation, sx, 0.200, 0);
+        addBox(group, sideW, 0.400, SKIN_T, materials.cobInner, sx, 0.200, -(WALL_T / 2 - SKIN_T / 2));
+      }
       // Hinge on the north jamb (local +X); leaf extends into the opening (−X) and opens out.
       const leaf = makeDoorLeaf(leafW, unitH, frameD, 'out', -1);
       leaf.pivot.position.set(clearW / 2, 0, 0);
@@ -841,7 +915,9 @@ function buildModel() {
   const U = G.utility;
   const ux0 = mm(U.x_w), ux1 = mm(U.x_e), uz0 = wz(mm(U.y_s)), uz1 = wz(mm(U.y_n));
   const uclW = ux1 - ux0, uclD = uz1 - uz0; // 3 x 2
-  const uInX0 = ux0 + 0.175, uInX1 = ux1 - 0.175, uInZ0 = uz0 + 0.175, uInZ1 = uz1 - 0.175;
+  const uHalf = WALL_T / 2; // 125 mm: 250 mm sandwich, same as the house
+  const uZSouth = Math.max(uz0, uz1), uZNorth = Math.min(uz0, uz1);
+  const uInX0 = ux0 + uHalf, uInX1 = ux1 - uHalf, uInZ0 = uZNorth + uHalf, uInZ1 = uZSouth - uHalf;
   const uPlX0 = ux0 - 0.200, uPlX1 = ux1 + 0.200, uPlZ0 = uz0 - 0.200, uPlZ1 = uz1 + 0.200;
   const plateTop = 2.650;
   const doorH = 2.100;
@@ -849,27 +925,43 @@ function buildModel() {
   const doorX0 = mm(U.door_x0), doorX1 = mm(U.door_x1); // 6.070-6.870
 
   // utility floor
-  addBox(houseGroup, uclW - 0.35, 0.02, uclD - 0.35, materials.earth, (ux0+ux1)/2, 0.01, (uz0+uz1)/2).castShadow = false;
+  addBox(houseGroup, uclW - WALL_T, 0.02, Math.abs(uclD) - WALL_T, materials.earth, (ux0+ux1)/2, 0.01, (uz0+uz1)/2).castShadow = false;
   // plinth U-shape (east sits on strip). Simple full rectangle plinth with door notch on south.
   addBox(houseGroup, uPlX1-uPlX0, 0.400, uPlZ1-uPlZ0, materials.stone, (uPlX0+uPlX1)/2, GRADE+0.200, (uPlZ0+uPlZ1)/2);
   // cut visual door notch: a grade-coloured block? skip — threshold will cover
-  // walls: N, E, W full; S with door
-  function wallRect(x0, z0, x1, z1, y0, y1) {
-    addBox(houseGroup, Math.abs(x1-x0), y1-y0, Math.abs(z1-z0), materials.cob,
-      (x0+x1)/2, (y0+y1)/2, (z0+z1)/2);
+  // Sandwich utility walls: 50 cob + 150 insulation + 50 cob, centred on the 150 mm frame line.
+  // thickAxis is the wall normal; outer is +1 when the +axis face is the outside.
+  function sandwichSlab(cx, cz, len, thickAxis, y0, y1, outer) {
+    const h = y1 - y0, ym = (y0 + y1) / 2;
+    const layers = [
+      [SKIN_T, materials.cob],
+      [FRAME_T, materials.insulation],
+      [SKIN_T, materials.cobInner]
+    ];
+    let fromOuter = 0;
+    const origin = thickAxis === 'x' ? cx : cz;
+    for (const [t, mat] of layers) {
+      const pos = origin + outer * (WALL_T / 2) - outer * (fromOuter + t / 2);
+      if (thickAxis === 'x') addBox(houseGroup, t, h, len, mat, pos, ym, cz);
+      else addBox(houseGroup, len, h, t, mat, cx, ym, pos);
+      fromOuter += t;
+    }
   }
-  // West wall
-  wallRect(ux0 - 0.175, uz0 - 0.175, ux0 + 0.175, uz1 + 0.175, PL_TOP, plateTop);
-  // East wall
-  wallRect(ux1 - 0.175, uz0 - 0.175, ux1 + 0.175, uz1 + 0.175, PL_TOP, plateTop);
-  // North wall
-  wallRect(ux0 + 0.175, uz1 - 0.175, ux1 - 0.175, uz1 + 0.175, PL_TOP, plateTop);
-  // South wall either side of door
-  wallRect(ux0 + 0.175, uz0 - 0.175, doorX0, uz0 + 0.175, PL_TOP, plateTop);
-  wallRect(doorX1, uz0 - 0.175, ux1 - 0.175, uz0 + 0.175, PL_TOP, plateTop);
-  // over door
+  const uLenNS = (uZSouth + uHalf) - (uZNorth - uHalf);
+  const uMidZ = (uZSouth + uZNorth) / 2;
+  const uLenEW = (ux1 - uHalf) - (ux0 + uHalf);
+  const uMidX = (ux0 + ux1) / 2;
+  // West / east run the full outer length (corners included). North / south span between their inner faces.
+  sandwichSlab(ux0, uMidZ, uLenNS, 'x', PL_TOP, plateTop, -1);
+  sandwichSlab(ux1, uMidZ, uLenNS, 'x', PL_TOP, plateTop, +1);
+  sandwichSlab(uMidX, uZNorth, uLenEW, 'z', PL_TOP, plateTop, -1);
+  const sZ = uz0; // south wall centreline (world +Z)
+  const leftW = doorX0 - (ux0 + uHalf);
+  const rightW = (ux1 - uHalf) - doorX1;
+  if (leftW > 0.02) sandwichSlab(ux0 + uHalf + leftW / 2, sZ, leftW, 'z', PL_TOP, plateTop, +1);
+  if (rightW > 0.02) sandwichSlab(doorX1 + rightW / 2, sZ, rightW, 'z', PL_TOP, plateTop, +1);
   if (doorH < plateTop) {
-    wallRect(doorX0, uz0 - 0.175, doorX1, uz0 + 0.175, doorH, plateTop);
+    sandwichSlab((doorX0 + doorX1) / 2, sZ, doorX1 - doorX0, 'z', doorH, plateTop, +1);
   }
   // top plate
   addBox(houseGroup, (ux1-ux0)+0.15, 0.100, (uz1-uz0)+0.15, materials.timber,
@@ -915,14 +1007,36 @@ function buildModel() {
   // Curved inner wall
   const iw = G.innerWall;
   const arcPts = iw.wallPoly.map(([x, y]) => new THREE.Vector3(mm(x), 0.020, wz(mm(y))));
-  buildRibbon(arcPts, CURVE_T, 2.200 - 0.020, materials.cobInner);
-  // plinth 200x200, top 20mm above FFL
-  buildRibbon(arcPts, 0.200, 0.020 - GRADE, materials.stone, GRADE);
-  // end stud
+  const iwCx = mm(iw.cx), iwCz = wz(mm(iw.cy));
+  function offsetArc(pts, dist) {
+    return pts.map((p) => {
+      const dx = p.x - iwCx, dz = p.z - iwCz;
+      const L = Math.hypot(dx, dz) || 1;
+      return new THREE.Vector3(p.x + dx / L * dist, p.y, p.z + dz / L * dist);
+    });
+  }
+  // Inner wall (CHECK / unconfirmed): 100 mm frame + 50+50 skins = 200 mm, flush with the 200 mm plinth.
+  // Height 2 355 mm from plinth top (20 AFF) to the outer head-plate soffit (2 375 AFF).
+  // 100 × 50 sole on DPC, 100 × 50 head, 100 × 100 full-height end post. Head is a closing plate, not tied to the roof.
+  // Positive offset is outward (living-room side, larger radius).
+  const IW_PLINTH = 0.020, IW_H = 2.355, IW_TOP = IW_PLINTH + IW_H; // 2.375
+  const IW_SOLE_H = 0.050, IW_HEAD_H = 0.050;
+  if (!materials.dpc) {
+    materials.dpc = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95, metalness: 0 });
+  }
+  buildRibbon(arcPts, 0.200, IW_PLINTH - GRADE, materials.stone, GRADE);
+  buildRibbon(arcPts, 0.180, 0.003, materials.dpc, IW_PLINTH);
+  buildRibbon(arcPts, 0.100, IW_SOLE_H, materials.timber, IW_PLINTH);
+  buildRibbon(offsetArc(arcPts, 0.075), 0.050, IW_H, materials.cob, IW_PLINTH);
+  buildRibbon(offsetArc(arcPts, -0.075), 0.050, IW_H, materials.cobInner, IW_PLINTH);
+  buildRibbon(arcPts, 0.100, IW_H - IW_SOLE_H - IW_HEAD_H, materials.insulation, IW_PLINTH + IW_SOLE_H);
+  buildRibbon(arcPts, 0.100, IW_HEAD_H, materials.timber, IW_TOP - IW_HEAD_H);
   const es = iw.endStud.map(([x,y]) => [mm(x), wz(mm(y))]);
+  let iwEnd = null;
   if (es.length === 4) {
     const cx = es.reduce((s,p)=>s+p[0],0)/4, cz = es.reduce((s,p)=>s+p[1],0)/4;
-    addBox(houseGroup, 0.10, 2.200, 0.10, materials.timber, cx, 1.10, cz);
+    addBox(houseGroup, 0.10, IW_H, 0.10, materials.timber, cx, IW_PLINTH + IW_H / 2, cz);
+    iwEnd = { x: cx, z: cz, section: 0.100, height: IW_H, y0: IW_PLINTH, y1: IW_TOP };
   }
 
   // Interior partitions (assumed 100 thick, 2.2 high) and furniture
@@ -996,14 +1110,225 @@ function buildModel() {
     }
   });
   colliders.push({ type: 'ring', rIn, rOut, openings });
-  colliders.push({ type: 'utility', x0: ux0 - 0.175, x1: ux1 + 0.175, z0: uz0 - 0.175, z1: uz1 + 0.175,
-    ix0: ux0 + 0.175, ix1: ux1 - 0.175, iz0: uz0 + 0.175, iz1: uz1 - 0.175,
+  colliders.push({ type: 'utility', x0: ux0 - uHalf, x1: ux1 + uHalf, z0: uZNorth - uHalf, z1: uZSouth + uHalf,
+    ix0: uInX0, ix1: uInX1, iz0: uInZ0, iz1: uInZ1,
     doorX0, doorX1, doorZ: uz0 });
   colliders.push({ type: 'arc', cx: mm(iw.cx), cz: wz(mm(iw.cy)), r: mm(iw.r), half: CURVE_T/2,
     pts: arcPts });
 
   // Clash overlays
   buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn);
+
+  // Sandwich-wall clash figures (recomputed from the new thicknesses).
+  computedClashes.cleared.wallBuild = (function () {
+    const postHalf = 0.100;
+    const coverIn = (R - postHalf) - rIn;
+    const coverOut = rOut - (R + postHalf);
+    const plinthIn = rIn - rPlIn;
+    const plinthOut = rPlOut - rOut;
+    const frameD = 0.070;
+    const timberReveal = (FRAME_T - frameD) / 2;
+    const proudOfFrame = postHalf - FRAME_T / 2;
+    const cobOverPost = SKIN_T - proudOfFrame;
+    const postProudOfWall = postHalf - WALL_T / 2; // negative = fully inside
+    const c = worktops.find((w) => w.name === 'counter');
+    const northZ = Math.min(c.z0, c.z1);
+    const counterGaps = [c.x0, c.x1].map((x) => {
+      const rho = Math.hypot(x, northZ);
+      return { x, z: northZ, rho, gap: rIn - rho };
+    });
+    const apron = K_SILL - 0.900;
+    // Knee braces leave ring posts through the 25 mm cob that covers the inner post face.
+    const ringNames = new Set(['S ring', 'E ring', 'N ring', 'W ring']);
+    const braceSkin = [];
+    braceMeshes.forEach((m) => {
+      const b = m.userData.brace;
+      if (!b || !ringNames.has(b.post)) return;
+      braceSkin.push({
+        post: b.post,
+        dir: b.dir,
+        side: b.side,
+        note: 'passes through the 25 mm cob over the inner post face (local skin stop, not a structural clash)'
+      });
+    });
+    const it = window.__interior;
+    let couchGap = null, bathOuter = null;
+    if (it && it.living && it.living.couch) {
+      const backX = it.living.couch.back;
+      const z0 = it.living.couch.north, z1 = z0 + it.living.couch.w;
+      let minClear = 1e9, atZ = z0;
+      for (let z = z0; z <= z1 + 1e-6; z += 0.02) {
+        let best = 1e9;
+        for (let i = 0; i < arcPts.length - 1; i++) {
+          const ax = arcPts[i].x, az = arcPts[i].z, bx = arcPts[i+1].x, bz = arcPts[i+1].z;
+          const ex = bx - ax, ez = bz - az;
+          const t = Math.max(0, Math.min(1, ((backX - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez || 1)));
+          const d = Math.hypot(backX - (ax + t * ex), z - (az + t * ez));
+          if (d < best) best = d;
+        }
+        const clear = best - CURVE_T / 2;
+        if (clear < minClear) { minClear = clear; atZ = z; }
+      }
+      couchGap = { min: minClear, atZ, walkwayToGardenJamb: it.living.couch.north - 0 };
+    }
+    if (it && it.bathroomPerson) {
+      const bp = it.bathroomPerson;
+      const bodyR = 0.200;
+      bathOuter = rIn - Math.hypot(bp.x, bp.z) - bodyR;
+    }
+    function distToArc(x, z) {
+      let best = 1e9;
+      for (let i = 0; i < arcPts.length - 1; i++) {
+        const ax = arcPts[i].x, az = arcPts[i].z, bx = arcPts[i+1].x, bz = arcPts[i+1].z;
+        const ex = bx - ax, ez = bz - az;
+        const t = Math.max(0, Math.min(1, ((x - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez || 1)));
+        const d = Math.hypot(x - (ax + t * ex), z - (az + t * ez));
+        if (d < best) best = d;
+      }
+      return best;
+    }
+    let bedGap = null, bathToInner = null, kitchenToInner = null, doorSwingGap = null;
+    if (it && it.bed) {
+      const b = it.bed;
+      let min = 1e9, at = null;
+      for (const [x, z] of [[b.x0, b.z0], [b.x1, b.z0], [b.x0, b.z1], [b.x1, b.z1]]) {
+        const d = distToArc(x, z) - CURVE_T / 2;
+        if (d < min) { min = d; at = { x, z }; }
+      }
+      bedGap = { min, at };
+    }
+    if (it && it.bathroomPerson) {
+      const bp = it.bathroomPerson;
+      bathToInner = distToArc(bp.x, bp.z) - CURVE_T / 2 - 0.200;
+    }
+    kitchenToInner = distToArc((c.x0 + c.x1) / 2, (c.z0 + c.z1) / 2) - CURVE_T / 2;
+    // Garden doors open inward (east). Larger leaf ~56 % of 1.91 m, south jamb at the W post (0, −5) world z = 0.
+    const garden = doors.find((d) => d.kind === 'gardendoor');
+    if (garden) {
+      const leaf = Math.max(...garden.leaves.map((l) => l.w));
+      // Sample the open-leaf arc from the south jamb (W post) and the north jamb.
+      let min = 1e9;
+      const jambs = [
+        { x: garden.p.x + (-garden.clearW / 2) * Math.cos(Math.atan2(garden.nx, garden.nz)),
+          z: garden.p.y + (-garden.clearW / 2) * Math.sin(Math.atan2(garden.nx, garden.nz)) },
+        { x: garden.p.x + ( garden.clearW / 2) * Math.cos(Math.atan2(garden.nx, garden.nz)),
+          z: garden.p.y + ( garden.clearW / 2) * Math.sin(Math.atan2(garden.nx, garden.nz)) }
+      ];
+      // Simpler: W post at (−5, 0) and the north jamb at theta 245.93, R.
+      const jS = { x: -5, z: 0 };
+      const jTh = 245.931074 * DEG;
+      const jN = { x: 5 * Math.sin(jTh), z: 5 * Math.cos(jTh) };
+      for (const j of [jS, jN]) {
+        for (let k = 0; k <= 8; k++) {
+          const ang = (k / 8) * Math.PI / 2;
+          // inward is +X (east) from the west wall
+          const x = j.x + leaf * Math.sin(ang);
+          const z = j.z + (j === jS ? -leaf * (1 - Math.cos(ang)) * 0 : 0);
+          // From south jamb, leaf swings north-east into the opening; from north jamb, south-east.
+          const x2 = j.x + leaf * Math.sin(ang);
+          const z2 = j === jS ? j.z - leaf * (1 - Math.cos(ang)) : j.z + leaf * (1 - Math.cos(ang));
+          const d = distToArc(x2, z2) - CURVE_T / 2;
+          if (d < min) min = d;
+        }
+      }
+      doorSwingGap = { min, leaf, note: 'garden doors open inward; back door opens out, away from the inner wall' };
+    }
+    // Beams and braces above the inner-wall head (2 375 AFF).
+    let iwBeam = { minSoffit: null, minGapAboveHead: null, atY: null };
+    for (const p of arcPts) {
+      const yN = -p.z;
+      const sof = soffitFFL(yN);
+      const gap = sof - IW_TOP;
+      if (iwBeam.minSoffit == null || sof < iwBeam.minSoffit) {
+        iwBeam = { minSoffit: sof, minGapAboveHead: gap, atY: yN, wallTop: IW_TOP };
+      }
+    }
+    const iwBraces = [];
+    braceMeshes.forEach((m) => {
+      const b = m.userData.brace;
+      if (!b) return;
+      const d = distToArc(m.position.x, m.position.z) - CURVE_T / 2;
+      const under = m.userData.underside;
+      if (d < 1.50) {
+        iwBraces.push({
+          post: b.post, dir: b.dir, planClear: d, underside: under,
+          aboveHead: under - IW_TOP, clash: d < 0.05 && under < IW_TOP + 0.05
+        });
+      }
+    });
+
+    // Upper closing vs beams / along-wall braces / roof.
+    const ucAtS = { y: -5, beamSoffit: soffitFFL(-5), closingTop: coverFFL(-5) - 0.020, headTop: HEAD_TOP };
+    const alongWall = braceMeshes.filter((m) => {
+      const b = m.userData.brace;
+      return b && ((b.post === 'E ring' || b.post === 'W ring') && b.dir === 'N-S');
+    }).map((m) => ({ post: m.userData.brace.post, side: m.userData.brace.side, underside: m.userData.underside }));
+    const usCount = (houseGroup.children.filter((m) => m.userData && m.userData.usStud) || []).length
+      + (function () { let n = 0; houseGroup.traverse((m) => { if (m.userData && m.userData.usStud) n++; }); return n; })();
+
+    return {
+      wallT: WALL_T, frameT: FRAME_T, skinT: SKIN_T,
+      rIn, rOut, rFrameIn, rFrameOut, rPlIn, rPlOut,
+      windowFrame: frameD,
+      cobReveal: SKIN_T,
+      timberReveal,
+      revealEachFace: SKIN_T,
+      liningCheck: '70 mm frame sits in the 150 mm timber frame (40 mm timber + 50 mm cob each side). It does not span the 250 mm wall; a lining or deeper frame may be needed (proposal CHECK).',
+      post: {
+        section: 0.200,
+        coverIn, coverOut,
+        fullyInside: postProudOfWall <= 1e-6,
+        proudMm: Math.round(postProudOfWall * 1000),
+        proudOfFrame, cobOverPost
+      },
+      plinth: { width: 0.400, revealIn: plinthIn, revealOut: plinthOut, wallOverhangs: plinthIn < -1e-6 || plinthOut < -1e-6 },
+      utility: { wallT: WALL_T, plinth: 0.400, reveal: 0.200 - WALL_T / 2, postCover: coverIn },
+      innerWall: {
+        unconfirmed: true,
+        thickness: CURVE_T,
+        frame: 0.100,
+        height: IW_H,
+        plinthTop: IW_PLINTH,
+        topAFF: IW_TOP,
+        sole: '100 × 50 on DPC',
+        head: '100 × 50 closing plate, not tied to the roof',
+        endPost: iwEnd,
+        flushWithPlinth: true,
+        bedGap,
+        bathroomFigureToInner: bathToInner,
+        bathroomToHouseInner: bathOuter,
+        kitchenToInner,
+        doorSwingGap,
+        beamAbove: iwBeam,
+        bracesNear: iwBraces
+      },
+      kitchen: { sillAssumed: K_SILL, apron, counterGaps },
+      furniture: { couchToInnerWall: couchGap, bathroomToHouseInner: bathOuter },
+      headPlate: { width: 0.150, skinProjectsPast: SKIN_T, skinsContinueToRoof: true, byDesign: true, coldBand: false },
+      braceThroughInnerSkin: { count: braceSkin.length, items: braceSkin },
+      upperClosing: {
+        unconfirmed: true,
+        thickness: WALL_T,
+        usSection: '150 × 50 (was 100 × 50)',
+        usAcrossWall: 0.150,
+        usCount: (function () { let n = 0; houseGroup.traverse((m) => { if (m.userData && m.userData.usStud) n++; }); return n; })(),
+        bearing: 'US now bears across the full 150 mm head plate (flush with both faces). Previously 100 mm across, 25 mm shy of each plate face. Position unchanged: centred on R = 5.0, from the head-plate top (2 475 mm) to the roof underside minus the 20 mm slip.',
+        slipJoint: 0.020,
+        skinsContinuePastHeadPlate: true,
+        south: ucAtS,
+        beam: {
+          soffitAtS: ucAtS.beamSoffit,
+          closingFrom: HEAD_TOP,
+          closingToAtS: ucAtS.closingTop,
+          note: 'The closing is non-load-bearing and is built around the main beams where they meet the ring (x = −5, 0, +5). Beam bearing stays on the posts; unchanged.'
+        },
+        bracesAlongWall: {
+          items: alongWall,
+          note: 'E/W along-wall (N–S) braces sit in the 150 mm frame / cavity (100 mm section, centred) and are built round; they do not clash with the 50 mm skins.'
+        }
+      }
+    };
+  })();
 
   addCompassRose(houseGroup, GRADE);
 
@@ -1273,6 +1598,12 @@ function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   addHud('Counter 900 mm (confirmed)', 0.70, 0.90, -3.25, ['heights']);
   addHud('300 mm wall above the counter', -0.35, 1.05, -4.15, ['heights']);
   addHud('Kitchen window 900 × 1 100 (assumed), top 2 300 mm', 0.55, 1.75, -4.55, ['heights']);
+  addHud('Wall 250 mm — 150 frame + 50+50 cob/plaster', 0.2, 1.35, 5.35, ['heights']);
+  addHud('Section: 50 cob + 150 frame + 50 cob', 0.42, 1.55, 5.12, ['heights']);
+  addHud('200 mm post, 25 mm cover each side', 0.08, 1.22, 5.28, ['heights']);
+  addHud('Window frame 70 mm in the 150 mm frame', -3.4, 1.55, 3.6, ['heights']);
+  addHud('Inner wall 200 mm × 2 355 mm (unconfirmed)', -0.15, 1.35, 2.05, ['heights']);
+  addHud('Upper closing 250 mm sandwich (unconfirmed)', 0.55, 2.85, 5.20, ['heights']);
   addHud('Door head 2 375 mm', -5.3, 2.40, -0.3, ['heights']);
   addHud('Head plate top 2 475 mm', -5.3, 2.55, -0.9, ['heights']);
   addHud(`Utility plate ${fmtMm(plateTop)} mm`, 6.6, 2.50, 1.15, ['heights']);

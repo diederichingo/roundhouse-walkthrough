@@ -15,7 +15,7 @@
   <div id="ui">
     <header class="top">
       <h1>Els’s roundhouse, Penamacor
-        <span>Option B walkthrough · v1i · not for construction</span>
+        <span>Option B walkthrough · v1j · not for construction</span>
       </h1>
       <div class="modes" role="group" aria-label="View mode">
         <button id="btnOrbit" aria-pressed="true">Orbit</button>
@@ -51,6 +51,8 @@
         <button type="button" data-view="kitchen-person">Kitchen with person</button>
         <button type="button" data-view="bathroom-person">Bathroom with person</button>
         <button type="button" data-view="living">Living room</button>
+        <button type="button" data-view="window-reveal">Window reveal</button>
+        <button type="button" data-view="post-coverage">Post coverage</button>
       </div>
 
       <h2>Clash checker</h2>
@@ -68,15 +70,18 @@
         <li>Kitchen counters 900 mm above the finished inside floor (all kitchen counters).</li>
         <li>All window tops 2 300 mm above FFL.</li>
         <li>Structural timber is Douglas fir, C24 or equivalent.</li>
+        <li>House, utility and kitchen under-sill walls are a sandwich: 150 mm timber frame with insulation and up to 50 mm cob/plaster skin each face (250 mm total), covering the 200 mm posts (Roundhouse Control, 25 Nov 2026).</li>
       </ol>
 
       <h2>Assumed</h2>
       <ol id="assumptions">
-        <li>House and utility walls modelled as 350 mm cob, centred on the centreline (thickness is not dimensioned on the drawings).</li>
-        <li>Curved inner wall 250 mm thick.</li>
-        <li>Kitchen window 900 × 1 100 mm, sill 1 200 mm (size and sill assumed; top is the confirmed 2 300 mm).</li>
+        <li>Curved inner wall 200 mm × 2 355 mm (unconfirmed / CHECK): 100 mm frame + 50 mm cob/plaster each face, flush with the 200 mm plinth, from plinth top (20 mm AFF) to 2 375 mm AFF. 100 × 50 sole on DPC, 100 × 50 head (closing plate, not tied to the roof), 100 × 100 full-height end post.</li>
+        <li>Kitchen window 900 × 1 100 mm, sill 1 200 mm (size and sill assumed; top is the confirmed 2 300 mm). The proposal notes a kitchen sill rail top of 1 185 mm AFF — not used.</li>
+        <li>Window frames 70 mm deep, sitting in the 150 mm timber frame (~50 mm cob reveal + 40 mm timber each side). A lining or deeper frame may be needed because 70 mm does not span 250 mm (proposal CHECK).</li>
+        <li>Insulation product CHECK (150 mm expanded cork is the preferred candidate). The 50 mm skin is the example maximum (CHECK with Matilde).</li>
+        <li>Upper closing is the same 250 mm sandwich (unconfirmed / CHECK): US member 150 × 50 (was 100 × 50), 150 mm across the wall with skins on both faces. 20 mm slip under the roof. Skins and cavity run past the head plate so it is not a cold band.</li>
         <li>FFL 180 mm above grade (provisional in the plan).</li>
-        <li>Sandwich panels 60 mm thick; window frames 70 mm deep.</li>
+        <li>Roof sandwich panels 60 mm thick.</li>
         <li>Level site; no solar array, gutters or flashings.</li>
         <li>Interior partitions 100 mm thick × 2 200 mm high; bed 450 mm; fixtures 400 mm.</li>
         <li>Garden door leaves split 56 / 44, opening in; back-door leaf 70 % of the clear opening, opening out.</li>
@@ -111,6 +116,6 @@
     }
   }
   </script>
-  <script type="module" src="js/app.js?v=1i"></script>
+  <script type="module" src="js/app.js?v=1j"></script>
 </body>
 </html>
