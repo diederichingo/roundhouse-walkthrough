@@ -6,8 +6,7 @@ Every item below is an assumption used in the 3D model. Confirmed dimensions com
 
 - House and utility walls are modelled as **350 mm cob**, centred on the centreline. Tom wants this called just “cob” with no stated thickness; 350 mm is a modelling assumption only and is not labelled in the walkthrough except in the Assumed list.
 - Curved inner wall thickness: **250 mm**, centred on the drawn arc.
-- Kitchen counter height: **900 mm** above FFL.
-- Kitchen window: **900 mm wide × 1 100 mm high**, sill **1 200**, head **2 300**, against the N post, above the counter.
+- Kitchen window: **900 mm wide × 1 100 mm high**, sill **1 200** (size and sill still assumed), against the N post, above the counter. The window top is the confirmed **2 300 mm** (all window tops at one height).
 - Finished floor level: **180 mm above grade** (drawn provisional in the plan).
 - Green sandwich roof panel thickness: **60 mm**, measured normal to the 7° plane.
 - Window / door frame depth: **70 mm**.
@@ -40,7 +39,7 @@ Every item below is an assumption used in the 3D model. Confirmed dimensions com
 - Sun position: NOAA-style solar algorithm for **40.17° N, 7.17° W** (Penamacor). Clock time is **Europe/Lisbon** (WET, UTC+0, in winter; WEST, UTC+1, last Sunday of March to last Sunday of October). Atmospheric refraction is a simple correction; it is not a full SPA.
 - First-person eye height: **1.70 m** above FFL. Collision radius **0.22 m** against walls, posts, the curved wall, the utility, the counter, the stove, closets and the bed.
 - Walkable ground is treated as flat at FFL inside the house and utility, and at grade outside (180 mm below). The model does not step the player up the 180 mm plinth edge; a short ease is applied at door thresholds so the walk-through stays smooth. (Assumed control convenience.)
-- Clash “windows overlapping the counter” is evaluated in plan: the kitchen window opening versus the 900 mm worktop. A typical 300 mm backsplash gap remains in elevation (sill 1 200, worktop 900).
+- Window / counter clashes are evaluated in plan and elevation. The kitchen window (sill 1 200 mm, assumed) sits 300 mm above the confirmed 900 mm worktop, so that pair is clear. Other windows (sill 400 mm) do not overlap a kitchen counter in plan.
 
 ## World axis mapping (v1b, corrected)
 
@@ -75,4 +74,6 @@ Raised together: the roof structure and all roof posts (house ring, centre, corn
 
 Not raised: cob walls, the head plate (top 2 475 mm, soffit 2 375 mm), openings (back-door head 2 360 mm, garden doors 2 330 mm, windows 2 300 mm), plinth, foundations, and the utility top plate (2 650 mm). FFL stays 180 mm above grade. The cob upper closing simply fills the extra gap up to the raised roof underside (minus the 20 mm slip).
 
-Counter height remains **900 mm**, assumed (undecided).
+## Confirmed: kitchen counters (25 Nov 2026)
+
+Kitchen counter height is **900 mm** above the finished inside floor, for **all kitchen counters**. Confirmed by Tom, 25 Nov 2026. This is no longer an assumption. All window tops stay at **2 300 mm**. The kitchen-window sill remains **1 200 mm**, assumed, leaving a 300 mm wall/apron above the worktop.

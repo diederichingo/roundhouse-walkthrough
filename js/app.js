@@ -1,5 +1,5 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1d.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1e.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
@@ -912,9 +912,17 @@ function buildModel() {
   fixture(F.bidet, 'bidet');
   fixture(F.basin, 'basin');
 
-  // Kitchen window vs counter clash needs the counter AABB
-  const cxs = F.counter.map(p => mm(p[0])), czs = F.counter.map(p => wz(mm(p[1])));
-  const counterBox = { x0: Math.min(...cxs), x1: Math.max(...cxs), z0: Math.min(...czs), z1: Math.max(...czs) };
+  // Kitchen work surfaces (all counters confirmed at 900 mm above FFL)
+  const COUNTER_H = 0.900;
+  function aabbOf(poly) {
+    const xs = poly.map(p => mm(p[0])), zs = poly.map(p => wz(mm(p[1])));
+    return { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
+  }
+  const counterBox = aabbOf(F.counter);
+  const worktops = [
+    { name: 'counter', ...counterBox, top: COUNTER_H },
+    { name: 'stove', ...aabbOf(F.stove), top: COUNTER_H }
+  ];
 
   // Collision: house wall circle, openings
   const openings = [];
@@ -936,7 +944,7 @@ function buildModel() {
     pts: arcPts });
 
   // Clash overlays
-  buildClashes(braceMeshes, counterBox, segs, verts, U, plateTop);
+  buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn);
 
   addCompassRose(houseGroup, GRADE);
 
@@ -959,7 +967,7 @@ function fmtMm(m) {
   return n.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
 }
 
-function buildClashes(braceMeshes, counterBox, segs, verts, U, plateTop) {
+function buildClashes(braceMeshes, worktops, segs, verts, U, plateTop, rIn) {
   // Recompute every clash from the raised geometry. Do not hard-code old B-sheet clashes.
   const LIMIT = 2.0;
   const EPS = 0.008; // treat 1.992–2.008 as "at the limit"
@@ -1047,25 +1055,56 @@ function buildClashes(braceMeshes, counterBox, segs, verts, U, plateTop) {
     // only if we didn't already describe the 2.0 m case indoors
   }
 
-  // Kitchen window vs counter (still overlaps; counter height assumed)
+  // Window vs worktop: a clash only if the opening overlaps a 900 mm work surface
+  // in plan and the sill is below the worktop. Kitchen sill 1 200 mm leaves a
+  // 300 mm wall/apron above the confirmed 900 mm counter (cleared).
+  const WIN_HEAD = 2.300; // confirmed: all window tops at one height
+  const SILL_OF = { kitchen: 1.200, big: 0.400, small: 0.400 };
+  function planOverlaps(seg, box) {
+    if (!box) return false;
+    for (let i = 0; i <= 40; i++) {
+      const th = seg.th0 + (seg.th1 - seg.th0) * i / 40;
+      for (const r of [rIn, rIn - 0.40, rIn - 0.80]) {
+        const p = polar(th, r);
+        if (p.x >= box.x0 && p.x <= box.x1 && p.y >= box.z0 && p.y <= box.z1) return true;
+      }
+    }
+    return false;
+  }
+  const windowChecks = [];
+  segs.forEach((seg) => {
+    if (!(seg.kind in SILL_OF)) return;
+    const sill = SILL_OF[seg.kind];
+    worktops.forEach((w) => {
+      const overlap = planOverlaps(seg, w);
+      const apron = sill - w.top;
+      windowChecks.push({
+        seg: seg.no, kind: seg.kind, note: seg.note, worktop: w.name,
+        overlap, sill, worktopH: w.top, apron, clash: overlap && apron < -0.001
+      });
+      if (overlap && apron < -0.001) {
+        const mid = (seg.th0 + seg.th1) / 2;
+        const p = polar(mid, 4.7);
+        const slab = addBox(clashGroup, 0.90, 0.30, 0.50, materials.clash, p.x, (sill + w.top) / 2, p.y);
+        slab.rotation.y = Math.atan2(Math.sin(mid * DEG), Math.cos(mid * DEG));
+        slab.castShadow = false;
+        const id = `window-counter-${seg.no}-${w.name}`;
+        computedClashes.push({
+          id,
+          severity: 'red',
+          title: `${seg.kind === 'kitchen' ? 'Kitchen' : 'Window'} vs ${w.name}`,
+          detail: `Window ${fmtMm(sill)}–${fmtMm(WIN_HEAD)} mm overlaps the ${fmtMm(w.top)} mm ${w.name} in plan.`
+        });
+        CLASH_VIEWS[id] = { cam: { x: p.x * 0.3, y: 1.50, z: p.y * 0.45, tx: p.x * 0.1, ty: 1.15, tz: p.y * 0.95 } };
+      }
+    });
+  });
+
   const k = segs.find((s) => s.kind === 'kitchen');
   let kitchenMid = null, kitchenP = null;
-  if (k && counterBox) {
-    const mid = (k.th0 + k.th1) / 2;
-    kitchenMid = mid;
-    kitchenP = polar(mid, 4.7);
-    const slab = addBox(clashGroup, 0.90, 0.30, 0.50, materials.clash, kitchenP.x, 1.05, kitchenP.y);
-    slab.rotation.y = Math.atan2(Math.sin(mid * DEG), Math.cos(mid * DEG));
-    slab.castShadow = false;
-    computedClashes.push({
-      id: 'kitchen-window',
-      severity: 'red',
-      title: 'Kitchen window over the counter',
-      detail: 'Window 1 200–2 300 mm is drawn above a 900 mm worktop (counter height still to confirm with Els).'
-    });
-    CLASH_VIEWS['kitchen-window'] = {
-      cam: { x: 1.15, y: 1.50, z: -2.35, tx: 0.50, ty: 1.15, tz: -4.55 }
-    };
+  if (k) {
+    kitchenMid = (k.th0 + k.th1) / 2;
+    kitchenP = polar(kitchenMid, 4.7);
   }
 
   // Record clearances that used to be clashes, for the report (not highlighted).
@@ -1084,7 +1123,8 @@ function buildClashes(braceMeshes, counterBox, segs, verts, U, plateTop) {
   computedClashes.cleared = {
     sJoint: { beamSoffit: sSoffit, headPlateTop: headTop, clearance: sSoffit - headTop },
     ewBraces: ewUnder != null ? { underside: ewUnder, headPlateTop: headTop, doorHead, abovePlate: ewUnder - headTop, aboveDoor: ewUnder - doorHead } : null,
-    utility: { plateTop, seSoffit, neSoffit, seGap, neGap }
+    utility: { plateTop, seSoffit, neSoffit, seGap, neGap },
+    counterWindows: windowChecks
   };
 
   // 2.0 m headroom planes
@@ -1139,9 +1179,10 @@ function buildClashes(braceMeshes, counterBox, segs, verts, U, plateTop) {
   const nBrace = braceMeshes.find((m) => m.userData.brace && m.userData.brace.post === 'N ring' && m.userData.brace.dir === 'N-S');
   if (nBrace) addHud(`N brace underside ${fmtMm(nBrace.userData.underside)} mm`, 0.5, nBrace.userData.underside + 0.04, -4.4, ['heights']);
   addHud('Sill 400 / head 2 300 mm', -4.2, 2.35, 1.5, ['heights']);
-  addHud('Kitchen sill 1 200 mm', 1.15, 1.22, -4.45, ['heights', 'kitchen-window']);
-  addHud('Counter 900 mm (assumed)', 0.70, 0.90, -3.25, ['heights', 'kitchen-window']);
-  addHud('Window 1 200–2 300 mm overlaps the worktop', -0.35, 1.45, -4.15, ['kitchen-window']);
+  addHud('Kitchen sill 1 200 mm (assumed)', 1.15, 1.22, -4.45, ['heights']);
+  addHud('Counter 900 mm (confirmed)', 0.70, 0.90, -3.25, ['heights']);
+  addHud('300 mm wall above the counter', -0.35, 1.05, -4.15, ['heights']);
+  addHud('Kitchen window 900 × 1 100 (assumed), top 2 300 mm', 0.55, 1.75, -4.55, ['heights']);
   addHud('Door head 2 375 mm', -5.3, 2.40, -0.3, ['heights']);
   addHud('Head plate top 2 475 mm', -5.3, 2.55, -0.9, ['heights']);
   addHud(`Utility plate ${fmtMm(plateTop)} mm`, 6.6, 2.50, 1.15, ['heights']);
