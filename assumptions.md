@@ -184,7 +184,7 @@ Walkthrough updated to the B-01–B-15 and project-plan revision of 26 November 
 5. Kitchen window 15 west of the N post, 180–192.7°, 900 × 1 100. B-15 dimensions the sill at ≈ 1 260 (160 mm above the 1 100 shelf), so the head is 2 360. That is 60 mm above the previous confirmed 2 300 window-top rule. Implemented as drawn on B-15. Leftover plan wording still says window 1 200–2 300 / rail 1 185.
 6. High window 970 × 1 190, sill 2 600, head 3 790, two top-hung outward sashes. Rod winder **ASSUMED** (16 mm). 50 mm west trimmer. US studs omitted in the opening. HW lining vs the N knee brace is a CHECK (≥ 50 mm).
 7. Utility walls close up to the main roof with a 20 mm slip (under the covering on N/S/W, under the x = +9 beam on the east). No separate utility roof or ceiling; house T&G, joists and insulation stay.
-8. East wall is the installation wall: 150 × 50 studs at most 450 mm, noggings at 550 / 1 000 / 1 500 / 2 000, 22 mm ply inside. A 50 mm cob/lime weather skin is kept on the outside (the wall is an exterior face). The plan says “a proper timber wall, not cob” — read here as the structure; the outside skin is the same as the other exterior walls. Hung boiler up to 150 L (size **ASSUMED** 500 × 500 × 1 200) and a gas geyser at the south end (size **ASSUMED** 350 × 250 × 700) with shelves under it. Plan / B-15 place the geyser about 2.4 m from the battery and inverter; B-13 notes ≈ 2.6 m. Kit is placed as on B-15 / the plan.
+8. East wall is the installation wall: 150 × 50 studs at most 450 mm, noggings at 550 / 1 000 / 1 500 / 2 000, 22 mm ply inside. A 50 mm cob/lime weather skin is kept on the outside (the wall is an exterior face). The plan says “a proper timber wall, not cob” — read here as the structure; the outside skin is the same as the other exterior walls. Hung boiler up to 150 L (size **ASSUMED** 500 × 500 × 1 200) and a gas geyser at the south end (size **ASSUMED** 350 × 250 × 700) with shelves under it. Geyser to battery 2.4 m centre to centre (one value since rev h). B-13 has said 2.4 m since rev h; the 2.6 m figure was rev g only and is stale.
 9. Ledge: 150 mm board, 28 mm thick (within the 27–30 mm range), top at 1 200, on the bed-side face of the curved inner wall, about 3.83 m, in mitred lengths. Working assumption / CHECK with Els (which wall/face).
 10. Text clean-up only (Option A leftover wording in the plan). Not a 3D change.
 11. Low Ø100 sleeved closable inlets (V1–V4) in bays 13, 16, 6 and 7 at 450 mm AFF; shower fan / lined vent F1 high in bay 8 at 2 700. External cowl on F1 is **ASSUMED** 160 mm square.
@@ -197,7 +197,7 @@ Walkthrough updated to the B-01–B-15 and project-plan revision of 26 November 
 - Bed-area closet vs window 1 (the sketched closet stays by the bed / partition, not in front of the window).
 - Curtain line (partition end to pier 3).
 - Kitchen window 15 head 2 360 vs the 2 300 rule (implemented as B-15).
-- Geyser-to-solar distance 2.4 m (plan / B-15) vs 2.6 m (B-13).
+- Geyser-to-solar distance 2.4 m centre to centre (rev h / i / j; the old B-13 2.6 m was rev g only).
 - Ledge wall/face with Els.
 - Installation-wall exterior finish (cob skin vs “not cob”).
 
@@ -211,7 +211,7 @@ One release covering Control's rev h answers, Tom's instruction that every wall 
 ### Rev h items
 
 - Kitchen window 15: window 1 200–2 300, rail top 1 185 (85 mm above the 1 100 shelf), 15 mm fit gap. The 2 360 on B-15 (rev g) was wrong.
-- Geyser to battery 2.400 m centre to centre (one value; B-13 2.6 m ignored). Kit sizes ASSUMED. Inverter sits next to the battery, not on the 2.4 m datum.
+- Geyser to battery 2.400 m centre to centre (one value; B-13 has said 2.4 m since rev h). Kit sizes ASSUMED. Inverter sits next to the battery, not on the 2.4 m datum.
 - Utility ceiling: two 50 × 200 trimmers UTR-N / UTR-S about 2.86 m just inside the N/S closings; W end on a hanger to a W edge joist (x ≈ 6.14), E end on the x = +9 beam; N–S joists ~600 c/c, split at the mid purlin; T&G and insulation over the utility interior, sloped 7°. Rev h specified a 10 mm shadow gap; Tom asked for no visible gaps, so T&G closes to the linings (2 mm).
 - Ledge: 150 × 30 board, 3.75 m long (equal setback from the earlier ~3.83 m polyline), on six node studs 100 × 50 at ~553 c/c, eight brackets (six studs + centre post + IW-ES). Wall/face still CHECK with Els.
 - Utility north door: 800 × 2 100 clear, rough opening 880 × 2 140; UDH 150 × 100 flat, underside 2 140, top 2 240; two cripple studs 150 × 50 × 310 from 2 240 to the plate underside 2 550; 40 mm linings.
@@ -243,4 +243,29 @@ Per-wall notes (drawings vs model):
 - Closet vs window 1 (sketched closet stays by the bed / partition).
 - Curtain line (partition end to pier 3).
 - Ledge wall/face with Els.
+- Insulation product and joist hangers.
+
+
+## v1r — plan rev 2026-11-26j (every wall closes to the ceiling; uniform limewash)
+
+Drawings: B-01–B-15 rev 2026-11-26j (authoritative), plus the rev j section of `drawings_optionB/answers_timber_rev_g.md`. Roof plan, overhangs and the south gutter are unchanged.
+
+### Height and closure (follow rev j; differences vs v1q reported)
+
+- T&G underside AFF = 3 504 + y·tan 7° (y north +, mm), level E–W. House centre 3 504 (v1q's inner-wall sample of 3 502 was at the house centre, 2 mm shy; the inner wall is not there).
+- Curved inner wall upper sandwich to the sloped T&G: **3 507 at the centre post, 3 288 mid-arc, 3 063 at IW-ES** (clear over the head plate 1 132 / 913 / 688). At the centre post the wall closes to the **x = 0 beam soffit (~3 284)**, not the T&G. Six upper studs 100 × 50 at the plate nodes, a 100 × 50 closing plate in 7 sloped pieces on a 10 mm compressible strip, 1 batten 25 × 38 per bay per face. IW-ES full height 100 × 100 × about 2 933 (sole top 70 to the closing plate).
+- P1–P3 full height: P1 2.17 m, T&G 3 506 level; P2 2.85 m, T&G 3 506 → 3 156 (mid 3 331; v1q sampled 3 258 at y ≈ −2.0 m); P3 1.62 m, T&G 3 515. 100 × 50 studs, skins ≤ 25 mm each face, no footing (CHECK Tom). Closets: sides to the T&G and a framed bulkhead from 2 100 to the T&G (C1 bed head, C2 by the shower; positions CHECK Els).
+- Utility T&G tight to the skins (1 mm to avoid z-fighting). Rev h's 10 mm shadow gap is dropped; v1q had closed it to 2 mm.
+- Ring wall under the x = ±5 beams: US 81.5 / 95.1 / 264.9 / 278.5° and UT-08/09/20/21 stop 20 mm under the beam soffit; 100 × 50 under-beam plate along the slope; 50 × 50 packers and skin up to the panels at the beam faces. No notching.
+- Geyser: 2.4 m c/c everywhere. The stale 2.6 m in this file (copied from rev g's B-13) is corrected. Other "2.6" figures (brace elevations, HW sill 2 600, plate 2 650) are unrelated.
+- All outside walls use the same lime render + limewash material and colour (house ring, utility N/S/W and E), so there is no visible change at the corners.
+
+### CHECKs still open
+
+- Window 1 sash vs S knee brace (~65 mm).
+- High-window lining vs N knee brace (~50 mm).
+- Utility door vs back door (218.9 mm as drawn).
+- Closet position and the curtain line (Els).
+- Ledge wall/face (Els).
+- Partition skins have no footing (Tom).
 - Insulation product and joist hangers.

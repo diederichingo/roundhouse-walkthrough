@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1q. Plan rev 2026-11-26i. Walls are a sandwich, not solid cob.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1r. Plan rev 2026-11-26j. Walls are a sandwich, not solid cob.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1q';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1r';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -74,8 +74,8 @@ function coverFFL(yNorth) { return 3.523923 + ROOF_RAISE + yNorth * TAN7; }
 function soffitFFL(yNorth) { return coverFFL(yNorth) - 0.200 - 0.240; }
 function beamTopFFL(yNorth) { return coverFFL(yNorth) - 0.200; }
 function tngSoffitFFL(yNorth) { return coverFFL(yNorth) - 0.200 - 0.020; }
-/** Top of a wall that closes to the T&G underside, 2 mm shy to avoid z-fighting. */
-function ceilingCloseAFF(zWorld) { return tngSoffitFFL(-zWorld) - 0.002; }
+/** Top of a wall that closes to the T&G underside, 1 mm shy to avoid z-fighting (rev j: tight, no shadow gap). */
+function ceilingCloseAFF(zWorld) { return tngSoffitFFL(-zWorld) - 0.001; }
 function polar(thetaDeg, r) {
   const t = thetaDeg * DEG;
   // theta 0 = south = +Z, 90 = east = +X. .x east, .y world z.
@@ -169,6 +169,13 @@ function makeMaterials() {
   materials.cobInner = new THREE.MeshStandardMaterial({
     map: textures.cob, color: 0xe8d3b0, roughness: 0.95, metalness: 0.0
   });
+  // One lime render + limewash for every exterior face (rev j): house, utility N/S/W and E, no colour change at the corners.
+  textures.limewash = noiseTexture(64, [232, 222, 204], [218, 208, 190], 0.22);
+  textures.limewash.repeat.set(8, 4);
+  materials.limeOuter = new THREE.MeshStandardMaterial({
+    map: textures.limewash, color: 0xe8e0d0, roughness: 0.92, metalness: 0.0
+  });
+  materials.lime = materials.limeOuter;
   // Insulation in the 150 mm frame (cork-like; product still CHECK).
   materials.insulation = new THREE.MeshStandardMaterial({
     color: 0xc4a56a, roughness: 0.92, metalness: 0.0
@@ -262,7 +269,7 @@ function classifyByMaterial(m, mat) {
   if (!m || !mat) return;
   const first = Array.isArray(mat) ? mat[0] : mat;
   const ud = m.userData;
-  if (first === materials.cob || first === materials.cobInner || first === materials.sillTape) {
+  if (first === materials.cob || first === materials.cobInner || first === materials.limeOuter || first === materials.lime || first === materials.sillTape) {
     ud.viewLayer = 'skin';
   } else if (first === materials.insulation) {
     ud.viewLayer = 'insulation';
@@ -708,7 +715,7 @@ function buildModel() {
     // End caps at openings (and at the S-post section) give a layered reveal.
     // Core avoids the sole / head plate.
     for (const [b0, b1] of rangesExceptSection(a0, a1)) {
-      houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, y0, y1, materials.cob, segs));
+      houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, y0, y1, materials.limeOuter, segs));
       const coreY0 = Math.max(y0, SOLE_TOP), coreY1 = Math.min(y1, HEAD_SOF);
       if (coreY1 > coreY0 + 1e-4) {
         houseGroup.add(ringBand(rFrameIn, rFrameOut, b0, b1, coreY0, coreY1, materials.insulation, segs));
@@ -802,7 +809,7 @@ function buildModel() {
   const US_SPACING = 0.600;
   function addUpperClosingBand(b0, b1, y0, y1, segsN = 3) {
     if (y1 <= y0 + 0.01 || b1 <= b0 + 0.04) return;
-    houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, y0, y1, materials.cob, segsN));
+    houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, y0, y1, materials.limeOuter, segsN));
     houseGroup.add(ringBand(rIn, rFrameIn, b0, b1, y0, y1, materials.cobInner, segsN));
     if (y1 > HEAD_TOP + 0.02) {
       const iy0 = Math.max(y0, HEAD_TOP);
@@ -833,7 +840,9 @@ function buildModel() {
       const t0 = a0 + (a1 - a0) * (i / n);
       const t1 = a0 + (a1 - a0) * ((i + 1) / n);
       const mid = polar((t0 + t1) / 2, R);
-      const top = coverFFL(-mid.y) - 0.020;
+      let top = coverFFL(-mid.y) - 0.020;
+      // Under the x = ±5 beams the closing stops 20 mm under the beam soffit (rev j).
+      if (Math.abs(Math.abs(mid.x) - 5.0) <= 0.100) top = soffitFFL(-mid.y) - 0.020;
       if (top > HEAD_SOF + 0.02) {
         for (const [b0, b1] of rangesExceptSection(t0, t1)) addUpperClosing(b0, b1, HEAD_SOF, top);
       }
@@ -865,7 +874,9 @@ function buildModel() {
     const HW = G.highWindow;
     if (HW && th > HW.th_e && th < HW.th_w) continue;
     const p = polar(th, R);
-    const top = coverFFL(-p.y) - 0.020;
+    let top = coverFFL(-p.y) - 0.020;
+    const underEW = Math.abs(Math.abs(p.x) - 5.0) <= 0.100;
+    if (underEW) top = soffitFFL(-p.y) - 0.020 - 0.050; // 20 mm slip + 100×50 under-beam plate
     const h = top - HEAD_TOP;
     if (h < 0.05) continue;
     const tt = th * DEG;
@@ -873,6 +884,50 @@ function buildModel() {
     m.rotation.y = Math.atan2(Math.sin(tt), Math.cos(tt));
     m.userData.usStud = true;
   }
+  // 100 × 50 under-beam plates (replace UT-08/09/20/21) under the x = ±5 beams,
+  // plus 50 × 50 packers and a skin strip up to the panels at each beam face (rev j).
+  (function underBeamPlates() {
+    const BEAM_X = [5.0, -5.0], HALF = 0.100;
+    function thetasUnder(bx) {
+      const lo = (Math.asin(Math.min(1, (Math.abs(bx) - HALF) / R))) * 180 / Math.PI;
+      // East post 90°, west 270°. Arc where |x| >= |bx|-HALF on the circle.
+      if (bx > 0) return [90 - (90 - lo), 90 + (90 - lo)];
+      return [270 - (90 - lo), 270 + (90 - lo)];
+    }
+    for (const bx of BEAM_X) {
+      const [tA, tB] = thetasUnder(bx);
+      const post = bx > 0 ? 90 : 270;
+      const postH = (0.100 / R) * 180 / Math.PI;
+      const ranges = [[tA, post - postH], [post + postH, tB]];
+      for (const [a0, a1] of ranges) {
+        if (a1 - a0 < 0.3) continue;
+        const mid = polar((a0 + a1) / 2, R);
+        const yN = -mid.y;
+        const plateTop = soffitFFL(yN) - 0.020;
+        const plateBot = plateTop - 0.050;
+        const ang = (a1 - a0) * DEG;
+        const chord = 2 * R * Math.sin(ang / 2);
+        const pl = addBox(houseGroup, chord, 0.050, 0.100, materials.timber,
+          mid.x, (plateBot + plateTop) / 2, mid.y);
+        pl.rotation.y = Math.atan2(mid.x, mid.y);
+        pl.userData.viewLayer = 'timber';
+        pl.userData.member = 'plate';
+        // Packer + skin/infill strip at the beam's N/S face, up to the covering slip.
+        const edgeTh = (a0 === ranges[0][0]) ? a0 : a1;
+        const ep = polar(edgeTh, R);
+        const coverTop = coverFFL(-ep.y) - 0.020;
+        const packY0 = soffitFFL(-ep.y) - 0.020;
+        if (coverTop > packY0 + 0.04) {
+          const pk = addBox(houseGroup, 0.050, coverTop - packY0, 0.050, materials.timber,
+            ep.x, (packY0 + coverTop) / 2, ep.y);
+          pk.rotation.y = edgeTh * DEG;
+          pk.userData.viewLayer = 'timber';
+          pk.userData.member = 'plate';
+          addUpperClosingBand(edgeTh - 0.4, edgeTh + 0.4, packY0, coverTop, 2);
+        }
+      }
+    }
+  })();
 
   // Close the wall up to the beam and the roof in each ring-post sector. The
   // post itself stops at the beam soffit, so the skipped post wedge was a
@@ -888,11 +943,11 @@ function buildModel() {
     const top = coverFFL(yN) - 0.020;
     const a0 = theta - half, a1 = theta + half;
     // 25 mm inner / outer skin zones around the beam, so the wall meets it.
-    houseGroup.add(ringBand(R + POST_HALF, rOut, a0, a1, beamSof, beamTop, materials.cob, 3));
+    houseGroup.add(ringBand(R + POST_HALF, rOut, a0, a1, beamSof, beamTop, materials.limeOuter, 3));
     houseGroup.add(ringBand(rIn, R - POST_HALF, a0, a1, beamSof, beamTop, materials.cobInner, 3));
     // Full sandwich from the beam top up to the slip (closes the hole above).
     if (top > beamTop + 0.005) {
-      houseGroup.add(ringBand(rFrameOut, rOut, a0, a1, beamTop, top, materials.cob, 3));
+      houseGroup.add(ringBand(rFrameOut, rOut, a0, a1, beamTop, top, materials.limeOuter, 3));
       houseGroup.add(ringBand(rIn, rFrameIn, a0, a1, beamTop, top, materials.cobInner, 3));
       houseGroup.add(ringBand(rFrameIn, rFrameOut, a0, a1, beamTop, top, materials.insulation, 3));
     }
@@ -1029,7 +1084,7 @@ function buildModel() {
       // Sandwich under the back-door side light (local +Z is outward).
       {
         const sx = -clearW / 2 + sideW / 2;
-        addBox(group, sideW, 0.400, SKIN_T, materials.cob, sx, 0.200, WALL_T / 2 - SKIN_T / 2);
+        addBox(group, sideW, 0.400, SKIN_T, materials.limeOuter, sx, 0.200, WALL_T / 2 - SKIN_T / 2);
         addBox(group, sideW, 0.400, FRAME_T, materials.insulation, sx, 0.200, 0);
         addBox(group, sideW, 0.400, SKIN_T, materials.cobInner, sx, 0.200, -(WALL_T / 2 - SKIN_T / 2));
       }
@@ -1538,7 +1593,7 @@ function buildModel() {
   function sandwichSlab(cx, cz, len, thickAxis, y0, y1, outer) {
     const h = y1 - y0, ym = (y0 + y1) / 2;
     const layers = [
-      [SKIN_T, materials.cob],
+      [SKIN_T, materials.limeOuter],
       [FRAME_T, materials.insulation],
       [SKIN_T, materials.cobInner]
     ];
@@ -1575,8 +1630,9 @@ function buildModel() {
     addBox(houseGroup, INSTALL_PLY, h, len, materials.ply, cx - FRAME_T / 2 - INSTALL_PLY / 2, ym, cz);
     // Outer: laths, then cob, then lime — 50 mm including laths, face at CL + 125.
     addBox(houseGroup, INSTALL_LATH, h, len, materials.timber, cx + FRAME_T / 2 + INSTALL_LATH / 2, ym, cz);
-    addBox(houseGroup, INSTALL_COB, h, len, materials.cob, cx + FRAME_T / 2 + INSTALL_LATH + INSTALL_COB / 2, ym, cz);
-    addBox(houseGroup, INSTALL_LIME, h, len, materials.lime, cx + FRAME_T / 2 + INSTALL_LATH + INSTALL_COB + INSTALL_LIME / 2, ym, cz);
+    // Cob + lime as one limewashed face, same material as every other exterior wall (rev j).
+    addBox(houseGroup, INSTALL_COB, h, len, materials.limeOuter, cx + FRAME_T / 2 + INSTALL_LATH + INSTALL_COB / 2, ym, cz);
+    addBox(houseGroup, INSTALL_LIME, h, len, materials.limeOuter, cx + FRAME_T / 2 + INSTALL_LATH + INSTALL_COB + INSTALL_LIME / 2, ym, cz);
     if (upperBattens) {
       // 25 × 38 batten, one per bay (~350 long), so upper laths have a carrier (bays > 400).
       const nBay = 4, bay = len / nBay;
@@ -1590,15 +1646,17 @@ function buildModel() {
   installEastWall(uMidZ, uLenNS, PL_TOP, plateTop, false);
   // Stop beads ~22 × 30 at the two inside corners (ply sits 28 mm behind the N/S inner skins).
   const plyFaceX = ux1 - 0.097;
-  function installStopBeads(y0, y1) {
-    const h = y1 - y0, ym = (y0 + y1) / 2;
-    if (h < 0.05) return;
+  function installStopBeads() {
+    // 22 × 30, 30 face to the room, floor to the T&G (rev j: NE ~3 405, SE ~3 190).
     [uInZ0 + 0.015, uInZ1 - 0.015].forEach((z) => {
-      const b = addBox(houseGroup, 0.022, h, 0.030, materials.timber, plyFaceX + 0.011, ym, z);
+      const y0 = 0.020, y1 = ceilingCloseAFF(z);
+      const h = y1 - y0;
+      if (h < 0.05) return;
+      const b = addBox(houseGroup, 0.022, h, 0.030, materials.timber, plyFaceX + 0.011, (y0 + y1) / 2, z);
       b.userData.viewLayer = 'timber';
     });
   }
-  installStopBeads(PL_TOP, plateTop);
+  installStopBeads();
   // North wall, door 800 clear / 880 opening, hinged east, opens out (item 1).
   const nZ = uZNorth;
   const leftW = doorX0 - (ux0 + uHalf);
@@ -1620,7 +1678,8 @@ function buildModel() {
     const crY0 = doorHead + 0.100, crY1 = plateTop - 0.100;
     const crH = crY1 - crY0;
     const span = doorX1 - doorX0;
-    [doorX0 + span * 0.30, doorX0 + span * 0.70].forEach((x) => {
+    // Rev j: centres 293 and 587 mm from the west jamb face.
+    [doorX0 + 0.293, doorX0 + 0.587].forEach((x) => {
       const cr = addBox(houseGroup, 0.050, crH, 0.150, materials.timber, x, (crY0 + crY1) / 2, nZ);
       cr.userData.viewLayer = 'timber';
       cr.userData.member = 'stud';
@@ -1671,7 +1730,7 @@ function buildModel() {
   const TNG_T = 0.020;
   const ROOF_INS_T = 0.150;
   const JOIST_W = 0.050, JOIST_D = 0.200;
-  const CEIL_GAP = 0.002; // was 20 mm; closed to the wall lining per Tom
+  const CEIL_GAP = 0.001; // rev j: tight to the linings (was 20 mm, then 2 mm in v1q)
   const rCeil = rIn - CEIL_GAP;
   const BEAM_HALF = 0.110;
   const JOIST_CC = 0.609;
@@ -1864,8 +1923,8 @@ function buildModel() {
   // Two 50×200 trimmers (~2.86 m) just inside the N/S closings carry the joist ends.
   // Rev h specified a 10 mm shadow gap; Tom asked for no visible gaps — T&G closes to the linings (2 mm).
   const uPlyX = ux1 - 0.097;
-  const uCeilX0 = uInX0 + 0.002, uCeilX1 = uPlyX - 0.002;
-  const uCeilZ0 = uInZ0 + 0.002, uCeilZ1 = uInZ1 - 0.002;
+  const uCeilX0 = uInX0 + 0.001, uCeilX1 = uPlyX - 0.001;
+  const uCeilZ0 = uInZ0 + 0.001, uCeilZ1 = uInZ1 - 0.001;
 
   // 150 mm insulation under the panel, between the purlins, house and utility interiors.
   for (let i = 0; i < purlinYs.length - 1; i++) {
@@ -2009,11 +2068,17 @@ function buildModel() {
   if (!materials.dpc) {
     materials.dpc = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95, metalness: 0 });
   }
+  // Rev j: skins to the sloped T&G, except at the centre post where the wall closes
+  // to the x = 0 beam soffit (~3 284). 10 mm compressible strip under a 100 × 50 closing plate.
+  function iwCloseAFF(x, z) {
+    if (Math.abs(x) <= 0.120) return soffitFFL(-z) - 0.001; // under the x = 0 beam
+    return ceilingCloseAFF(z);
+  }
   function ribbonToSoffit(pts, thickness, y0, mat) {
     for (let i = 0; i < pts.length - 1; i++) {
       const a = pts[i], b = pts[i + 1];
       const midX = (a.x + b.x) / 2, midZ = (a.z + b.z) / 2;
-      const y1 = ceilingCloseAFF(midZ);
+      const y1 = iwCloseAFF(midX, midZ);
       const h = y1 - y0;
       if (h < 0.02) continue;
       const len = Math.hypot(b.x - a.x, b.z - a.z);
@@ -2029,25 +2094,106 @@ function buildModel() {
   buildRibbon(offsetArc(arcPts, -0.075), 0.050, IW_H, materials.cobInner, IW_PLINTH);
   buildRibbon(arcPts, 0.100, IW_H - IW_SOLE_H - IW_HEAD_H, materials.insulation, IW_PLINTH + IW_SOLE_H);
   buildRibbon(arcPts, 0.100, IW_HEAD_H, materials.timber, IW_TOP - IW_HEAD_H);
-  // Upper closing to the T&G (Tom; drawings stop at 2 375).
+  // Upper closing in the same sandwich to the T&G (or the x = 0 beam at the post).
   ribbonToSoffit(offsetArc(arcPts, 0.075), 0.050, IW_TOP, materials.cob);
   ribbonToSoffit(offsetArc(arcPts, -0.075), 0.050, IW_TOP, materials.cobInner);
   ribbonToSoffit(arcPts, 0.100, IW_TOP, materials.insulation);
+  // 8 nodes (7 sloped closing plates ~568, 6 upper studs 100 × 50 at the interior nodes).
+  (function innerUpperFraming() {
+    const nSeg = 7;
+    const nodes = [];
+    for (let k = 0; k <= nSeg; k++) {
+      const u = k / nSeg;
+      // Sample the existing polyline by normalised length.
+      const cum = [0];
+      for (let i = 1; i < arcPts.length; i++) cum.push(cum[i - 1] + arcPts[i].distanceTo(arcPts[i - 1]));
+      const L = cum[cum.length - 1], s = u * L;
+      let p = arcPts[arcPts.length - 1].clone();
+      for (let i = 1; i < arcPts.length; i++) {
+        if (cum[i] >= s) {
+          const uu = (s - cum[i - 1]) / Math.max(1e-6, cum[i] - cum[i - 1]);
+          p = arcPts[i - 1].clone().lerp(arcPts[i], uu);
+          break;
+        }
+      }
+      nodes.push(p);
+    }
+    // Closing plates 100 × 50, 10 mm strip under the T&G (or under the beam at the post).
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const a = nodes[i], b = nodes[i + 1];
+      const midX = (a.x + b.x) / 2, midZ = (a.z + b.z) / 2;
+      const yTop = iwCloseAFF(midX, midZ) - 0.010;
+      const yBot = yTop - 0.050;
+      const len = Math.hypot(b.x - a.x, b.z - a.z);
+      const pl = addBox(houseGroup, len, 0.050, 0.100, materials.timber, midX, (yBot + yTop) / 2, midZ);
+      pl.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x);
+      pl.userData.viewLayer = 'timber';
+      pl.userData.member = 'plate';
+    }
+    // 6 upper studs at nodes 1–6, 100 × 50, head-plate top to the closing plate.
+    for (let k = 1; k < nSeg; k++) {
+      const p = nodes[k];
+      const y1 = iwCloseAFF(p.x, p.z) - 0.010 - 0.050;
+      const h = y1 - IW_TOP;
+      if (h < 0.05) continue;
+      const tangent = k < nodes.length - 1
+        ? Math.atan2(nodes[k + 1].z - nodes[k - 1].z, nodes[k + 1].x - nodes[k - 1].x)
+        : 0;
+      const st = addBox(houseGroup, 0.050, h, 0.100, materials.timber, p.x, IW_TOP + h / 2, p.z);
+      st.rotation.y = -tangent;
+      st.userData.viewLayer = 'timber';
+      st.userData.member = 'stud';
+    }
+    // 1 batten 25 × 38 per bay per face (14).
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const a = nodes[i], b = nodes[i + 1];
+      const midX = (a.x + b.x) / 2, midZ = (a.z + b.z) / 2;
+      const y1 = iwCloseAFF(midX, midZ) - 0.010 - 0.050;
+      const ym = (IW_TOP + y1) / 2;
+      const ang = -Math.atan2(b.z - a.z, b.x - a.x);
+      const nx = Math.cos(ang), nz = -Math.sin(ang); // outward-ish
+      for (const sign of [-1, 1]) {
+        const bt = addBox(houseGroup, Math.hypot(b.x - a.x, b.z - a.z) - 0.04, 0.038, 0.025,
+          materials.timber, midX + sign * 0.062 * nx, ym, midZ + sign * 0.062 * nz);
+        bt.rotation.y = ang;
+        bt.userData.viewLayer = 'timber';
+      }
+    }
+  })();
   const es = iw.endStud.map(([x,y]) => [mm(x), wz(mm(y))]);
   let iwEnd = null;
   if (es.length === 4) {
     const cx = es.reduce((s,p)=>s+p[0],0)/4, cz = es.reduce((s,p)=>s+p[1],0)/4;
-    const yEnd = ceilingCloseAFF(cz);
-    addBox(houseGroup, 0.10, yEnd - IW_PLINTH, 0.10, materials.timber, cx, (IW_PLINTH + yEnd) / 2, cz);
-    iwEnd = { x: cx, z: cz, section: 0.100, height: yEnd - IW_PLINTH, y0: IW_PLINTH, y1: yEnd };
+    // IW-ES full height 100 × 100: sole top 70 to the closing-plate underside (~2 933).
+    const soleTop = 0.070;
+    const plateUnd = iwCloseAFF(cx, cz) - 0.010 - 0.050;
+    const h = plateUnd - soleTop;
+    addBox(houseGroup, 0.10, h, 0.10, materials.timber, cx, (soleTop + plateUnd) / 2, cz);
+    iwEnd = { x: cx, z: cz, section: 0.100, height: h, y0: soleTop, y1: plateUnd };
   }
+  // Closure under the x = 0 beam at the centre post: a cheek on the beam's west
+  // face, from the soffit up to the T&G, so the step from ~3 284 to the ceiling is filled.
+  (function beamClosure() {
+    const xFace = -0.110;
+    const z0 = -0.15, z1 = 0.12;
+    const midZ = (z0 + z1) / 2;
+    const yBot = soffitFFL(-midZ) - 0.001;
+    const yTop = ceilingCloseAFF(midZ);
+    const h = yTop - yBot;
+    if (h > 0.04) {
+      addBox(houseGroup, 0.020, h, z1 - z0, materials.cob, xFace, (yBot + yTop) / 2, midZ);
+      addBox(houseGroup, 0.100, 0.050, z1 - z0, materials.timber, xFace - 0.04, yBot + 0.025, midZ);
+    }
+  })();
 
-  // Interior partitions and closets close to the T&G (Tom). Drawn/assumed height was 2 200.
+  // P1–P3 full height to the T&G (rev j): 100 × 50 frame, skins ≤ 25 mm each face, no footing (CHECK Tom).
   const F = G.furniture;
-  const PART_H = 2.200, PART_T = 0.100; // PART_H kept for the curtain rail only
+  const PART_H = 2.200, PART_T = 0.150; // PART_H kept for the curtain rail; 100 frame + 25 + 25 skins
   function wallToSoffit(ax, az, bx, bz, t, mat, y0) {
     const len = Math.hypot(bx - ax, bz - az);
     const n = Math.max(1, Math.ceil(len / 0.05));
+    const ang = -Math.atan2(bz - az, bx - ax);
+    const nx = Math.cos(ang), nz = -Math.sin(ang);
     for (let i = 0; i < n; i++) {
       const u0 = i / n, u1 = (i + 1) / n;
       const x0 = ax + (bx - ax) * u0, z0 = az + (bz - az) * u0;
@@ -2057,14 +2203,46 @@ function buildModel() {
       const h = y1 - y0, seg = Math.hypot(x1 - x0, z1 - z0);
       if (h < 0.02 || seg < 0.01) continue;
       const m = addBox(houseGroup, seg, h, t, mat, mx, (y0 + y1) / 2, mz);
-      m.rotation.y = -Math.atan2(z1 - z0, x1 - x0);
+      m.rotation.y = ang;
     }
+  }
+  function partitionToSoffit(ax, az, bx, bz) {
+    // Frame 100 + skins 25 each face. Sole 50 on a DPC at FFL; closing plate under a 10 mm strip.
+    const ang = -Math.atan2(bz - az, bx - ax);
+    const nx = Math.cos(ang), nz = -Math.sin(ang);
+    const len = Math.hypot(bx - ax, bz - az);
+    const n = Math.max(1, Math.ceil(len / 0.05));
+    for (let i = 0; i < n; i++) {
+      const u0 = i / n, u1 = (i + 1) / n;
+      const x0 = ax + (bx - ax) * u0, z0 = az + (bz - az) * u0;
+      const x1 = ax + (bx - ax) * u1, z1 = az + (bz - az) * u1;
+      const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+      const yTng = ceilingCloseAFF(mz);
+      const seg = Math.hypot(x1 - x0, z1 - z0);
+      if (seg < 0.01) continue;
+      // DPC + sole
+      addBox(houseGroup, seg, 0.003, 0.100, materials.dpc, mx, 0.0015, mz).rotation.y = ang;
+      addBox(houseGroup, seg, 0.050, 0.100, materials.timber, mx, 0.025, mz).rotation.y = ang;
+      const y1 = yTng;
+      const yFrameTop = yTng - 0.010;
+      const yPlateBot = yFrameTop - 0.050;
+      addBox(houseGroup, seg, 0.050, 0.100, materials.timber, mx, (yPlateBot + yFrameTop) / 2, mz).rotation.y = ang;
+      const y0s = 0.050, hSkin = y1 - y0s;
+      // Skins 25 mm, both faces, to the T&G
+      for (const sign of [-1, 1]) {
+        const sx = mx + sign * 0.0625 * nx, sz = mz + sign * 0.0625 * nz;
+        const sk = addBox(houseGroup, seg, hSkin, 0.025, materials.cobInner, sx, (y0s + y1) / 2, sz);
+        sk.rotation.y = ang;
+      }
+      const fr = addBox(houseGroup, seg, yPlateBot - y0s, 0.100, materials.insulation, mx, (y0s + yPlateBot) / 2, mz);
+      fr.rotation.y = ang;
+    }
+    colliders.push({ type: 'aabb', x0: Math.min(ax,bx)-0.08, x1: Math.max(ax,bx)+0.08,
+      z0: Math.min(az,bz)-0.08, z1: Math.max(az,bz)+0.08 });
   }
   F.partitions.forEach((p) => {
     const ax = mm(p.a[0]), az = wz(mm(p.a[1])), bx = mm(p.b[0]), bz = wz(mm(p.b[1]));
-    wallToSoffit(ax, az, bx, bz, PART_T, materials.cobInner, 0);
-    colliders.push({ type: 'aabb', x0: Math.min(ax,bx)-0.05, x1: Math.max(ax,bx)+0.05,
-      z0: Math.min(az,bz)-0.05, z1: Math.max(az,bz)+0.05 });
+    partitionToSoffit(ax, az, bx, bz);
   });
   function polyBlock(poly, h, y0, mat, inflate=0) {
     const xs = poly.map(p => mm(p[0])), zs = poly.map(p => wz(mm(p[1])));
@@ -2073,19 +2251,44 @@ function buildModel() {
     colliders.push({ type: 'aabb', x0: x0-inflate, x1: x1+inflate, z0: z0-inflate, z1: z1+inflate });
     return m;
   }
-  function polyBlockToSoffit(poly, y0, mat, inflate=0) {
-    const xs = poly.map(p => mm(p[0])), zs = poly.map(p => wz(mm(p[1])));
-    const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
-    const n = Math.max(1, Math.ceil((z1 - z0) / 0.05));
-    for (let i = 0; i < n; i++) {
-      const za = z0 + (z1 - z0) * i / n, zb = z0 + (z1 - z0) * (i + 1) / n;
-      const mz = (za + zb) / 2, y1 = ceilingCloseAFF(mz);
-      addBox(houseGroup, x1 - x0, y1 - y0, zb - za, mat, (x0 + x1) / 2, (y0 + y1) / 2, mz);
+  // Closets (positions CHECK Els): sides full height; framed bulkhead 2 100 → T&G over the front.
+  function closetBulkheadAndSides(x0, x1, z0, z1, front, mat) {
+    const T = 0.040, yDoor = 2.100;
+    function run(ax, az, bx, bz, y0) {
+      wallToSoffit(ax, az, bx, bz, T, mat, y0);
     }
-    colliders.push({ type: 'aabb', x0: x0-inflate, x1: x1+inflate, z0: z0-inflate, z1: z1+inflate });
+    // Sides and back always full height; front is a bulkhead from 2 100 only.
+    if (front === 'x0') {
+      run(x0, z0, x0, z1, yDoor); // front bulkhead
+      run(x1, z0, x1, z1, 0);
+      run(x0, z0, x1, z0, 0);
+      run(x0, z1, x1, z1, 0);
+    } else if (front === 'x1') {
+      run(x1, z0, x1, z1, yDoor);
+      run(x0, z0, x0, z1, 0);
+      run(x0, z0, x1, z0, 0);
+      run(x0, z1, x1, z1, 0);
+    } else if (front === 'z0') {
+      run(x0, z0, x1, z0, yDoor);
+      run(x0, z1, x1, z1, 0);
+      run(x0, z0, x0, z1, 0);
+      run(x1, z0, x1, z1, 0);
+    } else {
+      run(x0, z1, x1, z1, yDoor);
+      run(x0, z0, x1, z0, 0);
+      run(x0, z0, x0, z1, 0);
+      run(x1, z0, x1, z1, 0);
+    }
+    colliders.push({ type: 'aabb', x0: x0 - 0.02, x1: x1 + 0.02, z0: z0 - 0.02, z1: z1 + 0.02 });
   }
-  polyBlockToSoffit(F.closetShower, 0, materials.timber);
-  polyBlockToSoffit(F.closetBed, 0, materials.timber);
+  {
+    const xs = F.closetBed.map((p) => mm(p[0])), zs = F.closetBed.map((p) => wz(mm(p[1])));
+    closetBulkheadAndSides(Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs), 'x0', materials.timber);
+  }
+  {
+    const xs = F.closetShower.map((p) => mm(p[0])), zs = F.closetShower.map((p) => wz(mm(p[1])));
+    closetBulkheadAndSides(Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs), 'z0', materials.timber);
+  }
   // Bed is built in furnishInterior (1.40 × 2.00 m mattress, ~480 mm high).
   polyBlock(F.shower, 0.050, 0, materials.white);
   // Kitchen counter, hob and the 900 mm stove are rebuilt in buildRevG (straight wall, item 2).
@@ -2408,7 +2611,7 @@ function buildModel() {
       function wallBand(cx, cz, len, axis, outer, y0, y1, style) {
         if (y1 <= y0 + 0.02) return;
         if (style === 'install') {
-          installEastWall(cz, len, y0, y1, true);
+          installEastWall(cz, len, y0, y1, false);
         } else {
           sandwichSlab(cx, cz, len, axis, y0, y1, outer);
         }
@@ -2448,8 +2651,19 @@ function buildModel() {
         wallBand(xc, uZNorth, len, 'z', -1, plateTop, utilTopAt(xc, uZNorth), 'sandwich');
         wallBand(xc, uZSouth, len, 'z', +1, plateTop, utilTopAt(xc, uZSouth), 'sandwich');
       }
-      // Continue the corner stop beads up the upper closing to the T&G / beam slip.
-      installStopBeads(plateTop, Math.max(utilTopAt(ux1, uInZ0), utilTopAt(ux1, uInZ1), ceilingCloseAFF(uMidZ)));
+      // Upper E battens, one 25 × 38 per bay behind the outer laths only (rev j: 248 / 314 / 380 / 446).
+      (function upperEBattens() {
+        const lens = [0.248, 0.314, 0.380, 0.446];
+        const z0 = uZNorth + 0.100, z1 = uZSouth - 0.100;
+        const bay = (z1 - z0) / 4;
+        lens.forEach((L, i) => {
+          const z = z0 + bay * (i + 0.5);
+          const y0 = plateTop, y1 = utilTopAt(ux1, z);
+          const ym = (y0 + y1) / 2;
+          addBox(houseGroup, 0.025, 0.038, L, materials.timber,
+            ux1 + FRAME_T / 2 + 0.0125, ym, z);
+        });
+      })();
     })();
 
     // --- Item 8: boiler, geyser, shelves on the east installation wall ---
@@ -3009,7 +3223,7 @@ function buildModel() {
         nearerMm: Math.round(Math.min(inv, bat) * 1000),
         planMm: 2400,
         b13Mm: 2600,
-        note: 'Centres 2.400 m (rev h / i). B-13 2.6 m ignored. Kit sizes ASSUMED; inverter is next to the battery, not the 2.4 m datum.'
+        note: 'Centres 2.400 m (rev h / i / j). B-13 has said 2.4 m since rev h; the old 2.6 m was rev g only. Kit sizes ASSUMED; inverter is next to the battery, not the 2.4 m datum.'
       };
     }
     // Downpipes vs new south openings.
@@ -3040,28 +3254,46 @@ function buildModel() {
     let usCount = 0;
     houseGroup.traverse((m) => { if (m.userData && m.userData.usStud) usCount++; });
     // Wall-to-ceiling close-up (Tom, v1q). Heights at a few sample stations.
-    function wallGap(name, drawnTop, zWorld, afterTop) {
+    function wallGap(name, zWorld, afterTop, note) {
       const soff = tngSoffitFFL(-zWorld);
       return {
-        name, drawnTopMm: Math.round(drawnTop * 1000),
+        name,
         soffitMm: Math.round(soff * 1000),
-        drawnGapMm: Math.round((soff - drawnTop) * 1000),
         afterTopMm: Math.round(afterTop * 1000),
-        afterGapMm: Math.round((soff - afterTop) * 1000)
+        afterGapMm: Math.round((soff - afterTop) * 1000),
+        note: note || undefined
       };
     }
+    const iwPostZ = wz(0.0274), iwMidZ = wz(mm((G.innerWall && G.innerWall.cy) ? G.innerWall.cy + 0 : -1478)), iwEsZ = wz(-3588);
+    // Mid-arc from rev j: y = −1 478 (node 3 / documented mid 3 288).
+    const midArcZ = wz(-1.7617); // rev j mid-arc, T&G 3 288
     const wallGaps = {
-      note: 'Drawings leave the inner curved wall at 2 375 (closing plate not tied to the roof) and partitions at an assumed 2 200. Tom asked every wall to close to the T&G. House/utility ring upper closings already reached cover−20 mm (load-slip kept). House T&G inset was 20 mm; now 2 mm. Rev h utility T&G shadow gap was 10 mm; now 2 mm.',
-      innerCurvedWall: wallGap('Inner curved wall', 2.375, 0.0, ceilingCloseAFF(0)),
-      bathroomPartition: wallGap('Bathroom / bed partition (was 2 200 ASSUMED)', 2.200, 2.0, ceilingCloseAFF(2.0)),
-      houseSouthInner: wallGap('House south ring (upper closing already to roof−20)', coverFFL(-4.875) - 0.020, 4.875, coverFFL(-4.875) - 0.020),
-      houseNorthInner: wallGap('House north ring (upper closing already to roof−20)', coverFFL(4.875) - 0.020, -4.875, coverFFL(4.875) - 0.020),
+      note: 'Rev j: every wall closes to the T&G (1 mm shy) or, at the centre post, to the x = 0 beam soffit. v1q sampled the inner wall at the house centre (3 502 vs T&G 3 504); the wall is not there. Rev j heights: 3 507 / 3 288 / 3 063 at the centre post / mid-arc / IW-ES. Utility T&G tight (rev h 10 mm shadow gap dropped; v1q used 2 mm). Under the x = ±5 beams, ring studs and plates stop 20 mm under the beam soffit with a 100 × 50 under-beam plate. Exterior lime render + limewash is one colour on every outside wall.',
+      innerCentrePost: {
+        name: 'Inner wall at the centre post',
+        tngMm: Math.round(tngSoffitFFL(0.0274) * 1000), // 3507
+        beamSoffitMm: Math.round(soffitFFL(0.0274) * 1000), // ~3284
+        afterTopMm: Math.round((soffitFFL(0.0274) - 0.001) * 1000),
+        revjTngMm: 3507, revjBeamSoffitMm: 3284,
+        note: 'Closes to the x = 0 beam soffit, not the T&G (the beam hangs ~220 mm below the T&G).'
+      },
+      innerMidArc: wallGap('Inner wall mid-arc', midArcZ, ceilingCloseAFF(midArcZ), 'Rev j T&G 3 288'),
+      innerIWES: wallGap('Inner wall at IW-ES', wz(-3.588), ceilingCloseAFF(wz(-3.588)), 'Rev j T&G 3 063; IW-ES post 100 × 100 × ~2 933 (sole top 70 to the closing plate)'),
+      p1: wallGap('P1 bed-area north wall', wz(0.01515), ceilingCloseAFF(wz(0.01515)), 'Rev j T&G 3 506, level; length 2.17 m'),
+      p2: wallGap('P2 bathroom partition mid', wz(-1.409), ceilingCloseAFF(wz(-1.409)), 'Rev j T&G 3 506 → 3 156, mid 3 331 (v1q sampled y ≈ −2.0 m / 3 258)'),
+      p3: wallGap('P3 shower/closet wall', wz(0.0909), ceilingCloseAFF(wz(0.0909)), 'Rev j T&G 3 515; length 1.62 m'),
+      houseSouthInner: wallGap('House south ring (upper closing to cover−20, except under the S beam)', 4.875, coverFFL(-4.875) - 0.020),
+      houseNorthInner: wallGap('House north ring (upper closing to cover−20)', -4.875, coverFFL(4.875) - 0.020),
       kitchenShelf: { name: 'Kitchen straight wall (1 100 worktop — not raised)', topMm: 1100, note: 'Worktop, not a room divider.' },
       utilityEast: {
-        name: 'Utility E installation wall (rev i)',
-        outerFace: 'CL+125 (laths + cob + lime)',
+        name: 'Utility E installation wall (rev i / j)',
+        outerFace: 'CL+125, lime render + limewash, same colour as every outside wall',
         plyFace: 'CL−97',
-        top: 'upper closing to cover−20 mm, T&G closed to the ply (2 mm)'
+        top: 'upper closing to the x = +9 beam soffit − 20 mm; T&G tight to the ply (1 mm)'
+      },
+      underEWBeams: {
+        name: 'Ring wall under the x = ±5 beams',
+        note: 'US 81.5 / 95.1 / 264.9 / 278.5° and UT-08/09/20/21 stop 20 mm under the beam soffit; 100 × 50 under-beam plate; 50 × 50 packers and skin up to the panels at the beam faces.'
       }
     };
     return {

@@ -1,5 +1,5 @@
 /**
- * Interior set dressing for the Option B walkthrough (v1q):
+ * Interior set dressing for the Option B walkthrough (v1r):
  * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch and coffee table only).
  * Pieces are typical sizes for a sense of space, not from the drawings.
  */
@@ -302,6 +302,14 @@ export const VIEW_CAMS = {
   'utility-ceiling': {
     label: 'Utility interior / ceiling',
     cam: { x: 7.15, y: 1.55, z: 1.55, tx: 8.15, ty: 2.70, tz: 1.15 }
+  },
+  'inner-wall': {
+    label: 'Inner wall and partitions',
+    cam: { x: 1.6, y: 2.6, z: 2.0, tx: -0.2, ty: 2.8, tz: 3.4 }
+  },
+  'outside-corner': {
+    label: 'Utility / house outside corner (uniform render)',
+    cam: { x: 11.6, y: 2.10, z: 5.4, tx: 7.5, ty: 1.50, tz: 1.2 }
   },
   'install-wall': {
     label: 'Installation wall from outside',
