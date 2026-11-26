@@ -202,3 +202,45 @@ Walkthrough updated to the B-01–B-15 and project-plan revision of 26 November 
 - Installation-wall exterior finish (cob skin vs “not cob”).
 
 Saved cameras: kitchen (straight wall and high window), utility door, south windows 1 and 2 (new numbering, east of the S post), and south windows 24 and 25 (living SW / SSW gutter views). Living room remains couch and coffee table only.
+
+
+## v1q — plan rev 2026-11-26h / 2026-11-26i, and walls closed to the ceiling
+
+One release covering Control's rev h answers, Tom's instruction that every wall must close to the T&G, and the rev i correction of the utility east wall. Drawings: B-01–B-15 rev 2026-11-26i (authoritative). Roof plan, overhangs and the south gutter are unchanged.
+
+### Rev h items
+
+- Kitchen window 15: window 1 200–2 300, rail top 1 185 (85 mm above the 1 100 shelf), 15 mm fit gap. The 2 360 on B-15 (rev g) was wrong.
+- Geyser to battery 2.400 m centre to centre (one value; B-13 2.6 m ignored). Kit sizes ASSUMED. Inverter sits next to the battery, not on the 2.4 m datum.
+- Utility ceiling: two 50 × 200 trimmers UTR-N / UTR-S about 2.86 m just inside the N/S closings; W end on a hanger to a W edge joist (x ≈ 6.14), E end on the x = +9 beam; N–S joists ~600 c/c, split at the mid purlin; T&G and insulation over the utility interior, sloped 7°. Rev h specified a 10 mm shadow gap; Tom asked for no visible gaps, so T&G closes to the linings (2 mm).
+- Ledge: 150 × 30 board, 3.75 m long (equal setback from the earlier ~3.83 m polyline), on six node studs 100 × 50 at ~553 c/c, eight brackets (six studs + centre post + IW-ES). Wall/face still CHECK with Els.
+- Utility north door: 800 × 2 100 clear, rough opening 880 × 2 140; UDH 150 × 100 flat, underside 2 140, top 2 240; two cripple studs 150 × 50 × 310 from 2 240 to the plate underside 2 550; 40 mm linings.
+- High window as a factory unit (frame, mullion, two sashes, hinges, winder gearbox on the unit). West trimmer remains site framing around the unit.
+- Window 1 restrictor at 90° on the west (S-post) jamb, interior, galvanised, about 65 mm clear of the S brace (CHECK).
+- Installation studs: four 150 × 50 at 400 c/c, bays 275 / 350 / 350 / 350 / 275 between the post inner faces (1 800 mm); noggings flat, tops at 550 / 1 000 / 1 500 / 2 000; boiler rails doubled 900–1 000 and 1 900–2 000 in bays 1–2.
+
+### Rev i — utility east (installation) wall
+
+Replaces the rev h “boards on battens, no cob” build. Tom wants the utility to look like the building: no boards on battens outside. Outer face is a rendered cob look, flush at CL+125 like the other utility walls: 25 × 8 laths at 40 c/c nailed to the 150 mm frame, then a cob/clay skin and lime render, 50 mm including the laths (about 35 cob + 7 lime). Inner face is 22 mm ply at CL−97, with ~22 × 30 timber stop beads at the two inside corners (~2.6 m each, up to the ceiling). Upper E closing is the same stack, plus one 25 × 38 batten per bay (4 pcs ~350 long) because the upper bays are wider than 400 mm. No laths on the inside.
+
+### Walls closed to the ceiling (Tom)
+
+Els reported visible gaps where walls and coverings stopped short of the T&G. Tom: every wall and everything in it must close fully to the underside of the ceiling or roof, with no gaps. The 20 mm structural slip under the roof covering is kept (walls do not carry roof load). The 1 100 mm kitchen shelf is a worktop and is not raised. The bathroom curtain rail stays at 2 200 mm.
+
+Per-wall notes (drawings vs model):
+
+- House ring, upper closing, utility N/S/W: already reached cover−20 mm. The visible interior slot was mainly the 20 mm T&G inset from the inner skin (rIn). Closed to 2 mm. Matches the drawings on wall height; the inset close-up is per Tom, not the earlier 20 mm slip at the lining.
+- Utility east: same roof slip; T&G now closes to the ply (2 mm). Rev h had specified a 10 mm shadow gap — discrepancy, closed per Tom.
+- Inner curved wall: drawings stop at 2 375 AFF (closing plate not tied to the roof, CHECK). T&G along the wall is about 3 063–3 507, so a 688–1 132 mm gap was visible and matched the drawings. Per Tom an upper sandwich continues from 2 375 to the soffit (2 mm short of the boards). Drawing discrepancy reported.
+- Partitions and closets: 2 200 was ASSUMED, not drawn full-height. T&G about 3 156–3 515, gap 956–1 315 mm. Now closed to the soffit. Drawing / earlier-assumption discrepancy reported.
+- Shower tray (50 mm) is not a wall and is unchanged.
+
+### CHECKs still open
+
+- Window 1 sash vs S knee brace (~65 mm).
+- High-window lining vs N knee brace (~50 mm).
+- Utility door vs back door (218.9 mm as drawn).
+- Closet vs window 1 (sketched closet stays by the bed / partition).
+- Curtain line (partition end to pier 3).
+- Ledge wall/face with Els.
+- Insulation product and joist hangers.

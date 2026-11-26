@@ -22,9 +22,9 @@
   },
   "sill": 400,
   "windowHead": 2300,
-  "kitchenSill": 1260,
-  "kitchenSillRail": null,
-  "kitchenHead": 2360,
+  "kitchenSill": 1200,
+  "kitchenSillRail": 1185,
+  "kitchenHead": 2300,
   "doorHeadOpening": 2375,
   "gardenDoorUnit": [
     1880,
@@ -252,7 +252,8 @@
     "door_clear": 800,
     "door_opening": 880,
     "door_height": 2100,
-    "backDoorClearanceMm": 218.9
+    "backDoorClearanceMm": 218.9,
+    "door_head": 2140
   },
   "utilClearance": {
     "plate_top_ffl": 2650,
@@ -1514,7 +1515,7 @@
     }
   ],
   "ledge": {
-    "length": 3829.837965053328,
+    "length": 3750,
     "depth": 150,
     "top_aff": 1200,
     "face_r": 2548.9108630486335,
@@ -1915,7 +1916,9 @@
         -3421.755
       ]
     ],
-    "assumed": true,
-    "note": "bed-side face of the curved inner wall, from the open closet by the bed head to the bedroom entrance; CHECK with Els"
+    "assumed": false,
+    "note": "bed-side face, 150\u00d730 board 3.75 m on 6 node studs 100\u00d750 (~553 c/c); CHECK with Els (wall/face). Rev h.",
+    "thickness": 30,
+    "n_studs": 6
   }
 }
