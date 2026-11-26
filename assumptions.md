@@ -151,3 +151,21 @@ The living-room Eames lounge chair was already removed in the first v1k commit. 
 ## v1n — Roof off and Structure only view toggles
 
 No geometry change. Two view toggles, usable in Orbit and Walk, and combinable: **Roof off** hides the roof panels, membrane, T&G, ceiling joists, brace collars and roof insulation so you can look down into the rooms (walls, furniture and figures stay). **Structure only** shows the timber frame (posts, main beams, purlins, braces, joists, studs, plates) and steel connectors, coloured by member type, with a compact legend; cob/plaster, insulation, panels, glazing, doors, furniture and figures are hidden. There are no rafters in this roof (purlins and panels). Turning a toggle off restores the previous view.
+
+
+## v1o — south gutter at the low eave (ASSUMED)
+
+The roof plan and overhangs are unchanged. They already match Control’s description: **1.2 m** N/S from the wall centreline (roof y = ±6 200 mm, wall CL y = ±5 000), **1.0 m** west (roof x = −6 000, wall CL x = −5 000) and **1.5 m** east of the beam at x = +9 000 (roof edge x = +10 500).
+
+South gutter only, all figures **ASSUMED**:
+
+- **150 mm half-round**, pre-galv zinc, hung on rise-and-fall fascia brackets at about 800 mm centres from the flush south eave purlin / panel edge. A box gutter was not used, because the purlin, main-beam ends and panel edge are already flush; hanging a half-round keeps the roof geometry unchanged.
+- **Fall 3 mm/m** toward three **100 mm** circular downpipes that run to a shoe just above grade:
+  - SW corner post, **x = −5.00 m** (west of all south windows);
+  - SE corner post, **x = +5.00 m** (east of the bathroom windows, west of the utility);
+  - SE-ext post, **x = +9.00 m** (drains the east overhang).
+- Crowns (high points) at **x = 0** (15 mm above the outlets; in front of the solid south cob between the living and bedroom windows) and at **x = +7.00 m** (between the SE and SE-ext pipes). Short falls from the west stop-end (x = −6.00) and the east stop-end (x = +10.50) into the nearest pipe.
+- The gutter hides with **Roof off** and is hidden in **Structure only** (rainwater goods, not frame or structural connectors).
+- Saved cameras at the four south-facing big windows, standing **1.65 m** AFF and **1 m** back from the glass, looking out: South window 1 (living, SW, bay 24), South window 2 (living, SSW, bay 25), South window 3 (bedroom, SSE, bay 2), South window 4 (bedroom / bathroom, SE, bay 3). The two small bathroom windows (bays 4–5) face more south-east and were not given cameras.
+
+Plan rev 2026-11-26g (utility door, kitchen wall, garden doors, etc.) is not in this version.

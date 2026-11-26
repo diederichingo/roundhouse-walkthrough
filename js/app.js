@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1n. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1o. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1n';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1o';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -57,6 +57,7 @@ let clock = new THREE.Clock();
 let textures = {};
 let materials = {};
 let roofMesh, labels = [];
+let gutterSpec = null;
 let raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let hoverDoor = null;
@@ -210,6 +211,8 @@ function makeMaterials() {
   materials.white = new THREE.MeshStandardMaterial({ color: 0xeeeae4, roughness: 0.6 });
   materials.metal = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.7 });
   materials.galvanised = new THREE.MeshStandardMaterial({ color: 0xc6cac6, roughness: 0.28, metalness: 0.82, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  // Pre-galv zinc for rainwater goods (not structural steel).
+  materials.gutter = new THREE.MeshStandardMaterial({ color: 0x9aa19a, roughness: 0.38, metalness: 0.72 });
   materials.clash = new THREE.MeshBasicMaterial({
     color: 0xe24b3b, transparent: true, opacity: 0.55, depthTest: true, side: THREE.DoubleSide
   });
@@ -378,6 +381,7 @@ function finalizeViewLayers() {
   houseGroup.traverse((m) => {
     if (!m.isMesh) return;
     const ud = m.userData;
+    if (ud.viewLayer === 'rainwater') return;
     if (ud.post) { ud.viewLayer = 'timber'; ud.member = 'post'; return; }
     if (ud.usStud) { ud.viewLayer = 'timber'; ud.member = 'stud'; return; }
     if (ud.brace) { ud.viewLayer = 'timber'; ud.member = 'brace'; return; }
@@ -402,6 +406,7 @@ function meshShownInView(m) {
   const layer = m.userData.viewLayer;
   const member = m.userData.member;
   if (!layer || layer === 'overlay') return true;
+  if (layer === 'rainwater') return !roofOff && !structureOnly;
   if (layer === 'site') {
     if (!structureOnly) return true;
     return member === 'ground' || member === 'compass';
@@ -1137,6 +1142,237 @@ function buildModel() {
   roofUnder.castShadow = false;
   tagLayer(roofUnder, 'roofCover');
   houseGroup.add(roofUnder);
+
+  // South gutter at the low eave (ASSUMED). Half-round hung on the flush
+  // purlin/panel edge; no roof geometry is changed.
+  function buildSouthGutter() {
+    const ID = 0.150;                 // 150 mm half-round, nominal bore
+    const TH = 0.002;
+    const R_IN = ID / 2;
+    const R_OUT = R_IN + TH;
+    const FALL = 0.003;               // 3 mm/m
+    const DP_OD = 0.100;              // 100 mm circular downpipes
+    const zFascia = -mm(G.roof.y0);   // +6.200, outer face of the south eave
+    const gap = 0.008;
+    const zC = zFascia + gap + R_OUT;
+    const dripY = coverFFL(mm(G.roof.y0)) + 0.060 * Math.cos(7 * DEG);
+    const x0 = mm(G.roof.x0);         // −6.000
+    const x1 = mm(G.roof.x1);         // +10.500
+    // Lows at the SW, SE and SE-ext posts; crowns mid-run. Same outlet invert.
+    const outlets = [
+      { x: -5.00, name: 'SW corner post' },
+      { x:  5.00, name: 'SE corner post' },
+      { x:  9.00, name: 'SE-ext post' }
+    ];
+    const relPts = [
+      [x0,   Math.abs(x0 - outlets[0].x) * FALL],
+      [-5.00, 0],
+      [ 0.00, 5.00 * FALL],
+      [ 5.00, 0],
+      [ 7.00, 2.00 * FALL],
+      [ 9.00, 0],
+      [x1,   Math.abs(x1 - outlets[2].x) * FALL]
+    ];
+    // Crown rim ~22 mm below the roof drip so water falls into the trough.
+    const crownRel = 5.00 * FALL;
+    const I0 = dripY - 0.022 - R_IN - crownRel;
+    function invertAt(x) {
+      if (x <= relPts[0][0]) return I0 + relPts[0][1];
+      for (let i = 0; i < relPts.length - 1; i++) {
+        const a = relPts[i], b = relPts[i + 1];
+        if (x <= b[0] || i === relPts.length - 2) {
+          const t = (x - a[0]) / (b[0] - a[0]);
+          return I0 + a[1] + t * (b[1] - a[1]);
+        }
+      }
+      return I0 + relPts[relPts.length - 1][1];
+    }
+
+    const group = new THREE.Group();
+    group.name = 'southGutter';
+
+    // Hollow half-round trough, swept along X with the fall.
+    const NPHI = 18;
+    const NX = 96;
+    const pos = [];
+    const nrm = [];
+    const idx = [];
+    function ring(x, invert) {
+      const cy = invert + R_IN;
+      for (let side = 0; side < 2; side++) {
+        const R = side === 0 ? R_OUT : R_IN;
+        const sg = side === 0 ? 1 : -1;
+        for (let i = 0; i <= NPHI; i++) {
+          const phi = -Math.PI / 2 + (i / NPHI) * Math.PI; // back rim → bottom → front rim
+          const z = zC + R * Math.sin(phi);
+          const y = cy - R * Math.cos(phi);
+          pos.push(x, y, z);
+          nrm.push(0, sg * -Math.cos(phi), sg * Math.sin(phi));
+        }
+      }
+    }
+    for (let s = 0; s <= NX; s++) {
+      const x = x0 + (x1 - x0) * (s / NX);
+      ring(x, invertAt(x));
+    }
+    const stride = (NPHI + 1) * 2;
+    for (let s = 0; s < NX; s++) {
+      for (let side = 0; side < 2; side++) {
+        const base = s * stride + side * (NPHI + 1);
+        const next = base + stride;
+        for (let i = 0; i < NPHI; i++) {
+          const a = base + i, b = a + 1, c = next + i, d = c + 1;
+          if (side === 0) idx.push(a, c, b, b, c, d);
+          else idx.push(a, b, c, b, d, c);
+        }
+      }
+      // Join outer/inner at the two rims.
+      const backO = s * stride, backI = backO + NPHI + 1;
+      const frontO = backO + NPHI, frontI = backI + NPHI;
+      const backO2 = backO + stride, backI2 = backI + stride;
+      const frontO2 = frontO + stride, frontI2 = frontI + stride;
+      idx.push(backO, backI, backO2, backI, backI2, backO2);
+      idx.push(frontO, frontO2, frontI, frontI, frontO2, frontI2);
+    }
+    // Stop-end caps (filled half-annulus).
+    function cap(x, invert, flip) {
+      const start = pos.length / 3;
+      const cy = invert + R_IN;
+      pos.push(x, cy, zC);
+      nrm.push(flip, 0, 0);
+      for (let side = 0; side < 2; side++) {
+        const R = side === 0 ? R_OUT : R_IN;
+        for (let i = 0; i <= NPHI; i++) {
+          const phi = -Math.PI / 2 + (i / NPHI) * Math.PI;
+          pos.push(x, cy - R * Math.cos(phi), zC + R * Math.sin(phi));
+          nrm.push(flip, 0, 0);
+        }
+      }
+      // outer fan (verts 1..NPHI+1), inner fan (NPHI+2 .. 2NPHI+2); centre = start
+      // simpler: triangles between outer and inner, plus centre-to-inner is open (the bore).
+      const o0 = start + 1, i0 = start + 1 + NPHI + 1;
+      for (let i = 0; i < NPHI; i++) {
+        if (flip < 0) idx.push(o0 + i, i0 + i, o0 + i + 1, i0 + i, i0 + i + 1, o0 + i + 1);
+        else idx.push(o0 + i, o0 + i + 1, i0 + i, i0 + i, o0 + i + 1, i0 + i + 1);
+      }
+    }
+    cap(x0, invertAt(x0), -1);
+    cap(x1, invertAt(x1), +1);
+
+    const gGeo = new THREE.BufferGeometry();
+    gGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    gGeo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+    gGeo.setIndex(idx);
+    gGeo.computeVertexNormals();
+    const trough = new THREE.Mesh(gGeo, materials.gutter);
+    trough.castShadow = true;
+    trough.receiveShadow = true;
+    group.add(trough);
+
+    // Rise-and-fall fascia brackets, about 800 mm centres, clear of outlets.
+    const BRACKET_STEP = 0.800;
+    const nB = Math.max(2, Math.round((x1 - x0) / BRACKET_STEP));
+    const bStep = (x1 - x0) / nB;
+    const strapW = 0.020, strapT = 0.003;
+    function nearOutlet(x) {
+      return outlets.some((o) => Math.abs(o.x - x) < 0.14);
+    }
+    for (let i = 0; i <= nB; i++) {
+      const x = x0 + i * bStep;
+      if (nearOutlet(x)) continue;
+      const inv = invertAt(x);
+      const cy = inv + R_IN;
+      const strap = new THREE.Group();
+      // Hook following the outer half-round, slightly proud of the trough.
+      const hookR = R_OUT + 0.004;
+      const hookPts = [];
+      for (let k = 0; k <= 14; k++) {
+        const phi = -Math.PI / 2 + (k / 14) * Math.PI;
+        hookPts.push(new THREE.Vector3(0, cy - hookR * Math.cos(phi), zC + hookR * Math.sin(phi)));
+      }
+      const hookGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hookPts), 14, strapT, 5, false);
+      const hook = new THREE.Mesh(hookGeo, materials.gutter);
+      hook.castShadow = true;
+      strap.add(hook);
+      // Fixing plate on the purlin outer face.
+      const plateH = 0.080, plateW = 0.028, plateT = 0.003;
+      const plateY = Math.min(cy + 0.02, coverFFL(-6.125) - 0.030);
+      const plate = addBox(strap, plateW, plateH, plateT, materials.gutter, 0, plateY, zFascia + plateT / 2);
+      // Shank from the back rim to the plate.
+      const backY = cy;
+      const backZ = zC - hookR;
+      const shankLen = Math.hypot(plateY - backY, (zFascia + plateT) - backZ);
+      const shank = addBox(strap, strapT, strapT, shankLen, materials.gutter, 0, 0, 0);
+      shank.position.set(0, (plateY + backY) / 2, (zFascia + plateT + backZ) / 2);
+      shank.rotation.x = Math.atan2((zFascia + plateT) - backZ, plateY - backY);
+      strap.position.x = x;
+      group.add(strap);
+    }
+
+    // Outlets and 100 mm downpipes to grade, with a shoe at the bottom.
+    const grade = -mm(G.fflAboveGrade);
+    const shoeLen = 0.180;
+    const pipes = [];
+    outlets.forEach((o) => {
+      const inv = invertAt(o.x);
+      const cy = inv + R_IN;
+      // Spigot through the invert.
+      const spigot = new THREE.Mesh(
+        new THREE.CylinderGeometry(DP_OD / 2 - 0.004, DP_OD / 2, 0.080, 16),
+        materials.gutter
+      );
+      spigot.position.set(o.x, inv - 0.020, zC);
+      spigot.castShadow = true;
+      group.add(spigot);
+      const pipeTop = inv - 0.055;
+      const shoeY = grade + 0.070;
+      const pipeH = pipeTop - shoeY;
+      const pipe = new THREE.Mesh(
+        new THREE.CylinderGeometry(DP_OD / 2, DP_OD / 2, pipeH, 16),
+        materials.gutter
+      );
+      pipe.position.set(o.x, shoeY + pipeH / 2, zC);
+      pipe.castShadow = true;
+      pipe.receiveShadow = true;
+      group.add(pipe);
+      // 45° shoe turning out to the south, open just above grade.
+      const shoe = new THREE.Mesh(
+        new THREE.CylinderGeometry(DP_OD / 2, DP_OD / 2 - 0.004, shoeLen, 16),
+        materials.gutter
+      );
+      shoe.position.set(o.x, shoeY, zC + shoeLen * 0.35);
+      shoe.rotation.x = -Math.PI / 4;
+      shoe.castShadow = true;
+      group.add(shoe);
+      pipes.push({ x: o.x, z: zC, name: o.name, invert: inv, grade });
+      colliders.push({
+        type: 'aabb',
+        x0: o.x - DP_OD / 2 - 0.02, x1: o.x + DP_OD / 2 + 0.02,
+        z0: zC - DP_OD / 2 - 0.02, z1: zC + DP_OD / 2 + 0.08
+      });
+    });
+
+    tagLayer(group, 'rainwater');
+    houseGroup.add(group);
+
+    gutterSpec = {
+      assumed: true,
+      kind: 'half-round',
+      sizeMm: 150,
+      fallMmPerM: 3,
+      downpipeOdMm: 100,
+      axisZ: zC,
+      fasciaZ: zFascia,
+      invertDatum: I0,
+      dripY,
+      x0, x1,
+      outlets: pipes,
+      stations: relPts.map(([x, rel]) => ({ x, invert: I0 + rel, rel })),
+      hidesWith: ['roofOff', 'structureOnly']
+    };
+  }
+  buildSouthGutter();
+
 
   // Knee braces
   const braceMeshes = [];
@@ -3220,6 +3456,7 @@ window.__roundhouse = {
   flyDone: () => !fly,
   getClashes: () => computedClashes,
   roofRaise: () => ROOF_RAISE,
+  gutterSpec: () => gutterSpec,
   setWalkView,
   setView,
   activeClash: () => activeClash,

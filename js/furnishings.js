@@ -1,5 +1,5 @@
 /**
- * Interior set dressing for the Option B walkthrough (v1n):
+ * Interior set dressing for the Option B walkthrough (v1o):
  * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch and coffee table only).
  * Pieces are typical sizes for a sense of space, not from the drawings.
  */
@@ -314,5 +314,26 @@ export const VIEW_CAMS = {
   ceiling: {
     label: 'Ceiling',
     cam: { x: 1.20, y: 2.30, z: 3.40, tx: 0.00, ty: 2.92, tz: 4.50 }
+  },
+  // Standing 1.65 m AFF, 1 m back from the glass, looking out through each south window.
+  'south-window-1': {
+    label: 'South window 1 (from inside)',
+    note: 'Living, SW (bay 24)',
+    cam: { x: -2.283, y: 1.65, z: 3.285, tx: -4.566, ty: 1.80, tz: 6.569 }
+  },
+  'south-window-2': {
+    label: 'South window 2 (from inside)',
+    note: 'Living, SSW, west of the S post (bay 25)',
+    cam: { x: -1.301, y: 1.65, z: 3.782, tx: -2.603, ty: 1.80, tz: 7.565 }
+  },
+  'south-window-3': {
+    label: 'South window 3 (from inside)',
+    note: 'Bedroom, SSE, east of the S post (bay 2)',
+    cam: { x: 0.933, y: 1.65, z: 3.890, tx: 1.867, ty: 1.80, tz: 7.779 }
+  },
+  'south-window-4': {
+    label: 'South window 4 (from inside)',
+    note: 'Bedroom / bathroom, SE (bay 3)',
+    cam: { x: 1.957, y: 1.65, z: 3.488, tx: 3.915, ty: 1.80, tz: 6.977 }
   }
 };
