@@ -120,8 +120,69 @@ body.walk.touch #hint { left: 156px; }
 @media (max-width: 700px) {
   #togglePanel { display: block; }
   #panel { top: 58px; right: 10px; left: 10px; width: auto; }
-  header.top { padding-right: 52px; }
-  header.top h1 { font-size: 14px; }
+  header.top {
+    padding: 6px 48px 6px 8px;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  header.top h1 { flex: 1 1 100%; min-width: 0; font-size: 13px; }
+  header.top h1 span { font-size: 10px; }
+  .modes button, .tool {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .tool { margin-left: 0; }
+  .tools { gap: 3px; }
+}
+
+#structLegend {
+  position: absolute;
+  right: 10px;
+  bottom: calc(12px + var(--safe));
+  background: rgba(22, 20, 18, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px 7px;
+  font-size: 11px;
+  line-height: 1.2;
+  min-width: 104px;
+  max-width: 42vw;
+  z-index: 5;
+  box-shadow: 0 2px 10px rgba(0,0,0,.4);
+}
+#structLegend[hidden] { display: none !important; }
+#structLegend .leg-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  margin: 0 0 4px;
+  font-weight: 650;
+}
+#structLegend .leg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+#structLegend .leg-item i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 10px;
+  display: block;
+  border: 1px solid rgba(255,255,255,.28);
+}
+@media (max-width: 700px) {
+  #structLegend {
+    font-size: 10px;
+    padding: 5px 6px 6px;
+    right: 8px;
+    bottom: calc(10px + var(--safe));
+    min-width: 96px;
+  }
 }
 
 #hudLabels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
@@ -224,3 +285,5 @@ body.walk.touch #hint { left: 156px; }
 }
 #views button:hover { border-color: #8a7a68; }
 #views button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+body.structure-only #hint { display: none; }

@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1m. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1n. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1m';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1n';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -34,6 +34,8 @@ let clashesOn = false;
 let heightsOn = false;
 let measureOn = false;
 let measurePts = [];
+let roofOff = false;
+let structureOnly = false;
 let keys = Object.create(null);
 const WALK_START = { x: -2.20, z: -0.35, yaw: 0.55, pitch: -0.08 };
 const START_CAM = { x: 15.4, y: 7.6, z: 16.6, tx: 3.6, ty: 1.35, tz: 0.8 };
@@ -240,7 +242,212 @@ function addBox(parent, sx, sy, sz, mat, x, yUp, z, rx=0, ry=0, rz=0) {
   m.castShadow = true;
   m.receiveShadow = true;
   parent.add(m);
+  classifyByMaterial(m, mat);
   return m;
+}
+
+/** View-toggle layers only — no geometry change. */
+function classifyByMaterial(m, mat) {
+  if (!m || !mat) return;
+  const first = Array.isArray(mat) ? mat[0] : mat;
+  const ud = m.userData;
+  if (first === materials.cob || first === materials.cobInner || first === materials.sillTape) {
+    ud.viewLayer = 'skin';
+  } else if (first === materials.insulation) {
+    ud.viewLayer = 'insulation';
+  } else if (first === materials.tng) {
+    ud.viewLayer = 'ceiling';
+    ud.member = 'tng';
+  } else if (first === materials.roof || first === materials.roofUnder) {
+    ud.viewLayer = 'roofCover';
+  } else if (first === materials.glass) {
+    ud.viewLayer = 'glazing';
+  } else if (first === materials.door) {
+    ud.viewLayer = 'door';
+  } else if (first === materials.stone) {
+    ud.viewLayer = 'site';
+    ud.member = 'plinth';
+  } else if (first === materials.earth) {
+    ud.viewLayer = 'site';
+    ud.member = 'earth';
+  } else if (first === materials.ground) {
+    ud.viewLayer = 'site';
+    ud.member = 'ground';
+  } else if (first === materials.metal || first === materials.galvanised) {
+    ud.viewLayer = 'steel';
+    ud.member = 'steel';
+  } else if (first === materials.timber) {
+    ud.viewLayer = 'timber';
+  } else if (materials.dpc && first === materials.dpc) {
+    ud.viewLayer = 'site';
+    ud.member = 'plinth';
+  } else if (first === materials.white) {
+    ud.viewLayer = 'furniture';
+  } else if (first === materials.clash || first === materials.clashAmber || first === materials.clashLine || first === materials.headroom || first === materials.measure) {
+    ud.viewLayer = 'overlay';
+  }
+}
+
+function tagLayer(obj, layer, member) {
+  if (!obj) return obj;
+  const apply = (m) => {
+    if (!m.isMesh) return;
+    m.userData.viewLayer = layer;
+    if (member) m.userData.member = member;
+  };
+  apply(obj);
+  if (obj.traverse) obj.traverse(apply);
+  return obj;
+}
+
+const MEMBER_COLORS = {
+  post: 0xc56a2d,
+  beam: 0xe8b63a,
+  purlin: 0x2a9d8f,
+  brace: 0xe76f27,
+  joist: 0xd8c56a,
+  stud: 0x5b86c7,
+  plate: 0x9b6fb8,
+  steel: 0xd0d5d8
+};
+let memberMats = null;
+function getMemberMats() {
+  if (memberMats) return memberMats;
+  memberMats = {};
+  for (const [k, col] of Object.entries(MEMBER_COLORS)) {
+    const metal = k === 'steel' ? 0.75 : 0.05;
+    memberMats[k] = new THREE.MeshStandardMaterial({
+      color: col, roughness: k === 'steel' ? 0.32 : 0.55, metalness: metal
+    });
+  }
+  return memberMats;
+}
+
+function assignTimberMember(m) {
+  const g = m.geometry;
+  const p = g && g.parameters;
+  const y = m.position.y;
+  if (p) {
+    if (Math.abs(m.rotation.x - 7 * DEG) < 0.03 && p.width === 0.200 && p.height === 0.240) {
+      m.userData.member = 'beam'; return;
+    }
+    if (p.height === 0.200 && p.depth === 0.150 && p.width > 8) {
+      m.userData.member = 'purlin'; return;
+    }
+    if (p.width === 0.050 && p.height === 0.200) {
+      m.userData.viewLayer = 'ceiling';
+      m.userData.member = 'joist'; return;
+    }
+    if (p.width === 0.050 && p.depth === 0.150) {
+      m.userData.member = 'stud'; return;
+    }
+    if (p.width === 0.200 && p.depth === 0.200) {
+      m.userData.member = 'post'; return;
+    }
+    if (p.width === 0.060 && (p.height === 0.120 || p.height === 0.100)) {
+      m.userData.member = 'post'; return;
+    }
+    if (p.width === 0.100 && p.depth === 0.100 && p.height > 1.5) {
+      m.userData.member = 'post'; return;
+    }
+    if (p.height === 0.100 && p.width > 2 && p.depth > 1) {
+      m.userData.member = 'plate'; return;
+    }
+    if (p.height === 0.050 && p.depth === 0.050 && y > 2.4) {
+      m.userData.viewLayer = 'ceiling';
+      m.userData.member = 'joist'; return;
+    }
+    if (Math.abs(p.height - 2.200) < 0.02 || Math.abs(p.height - 0.850) < 0.02 ||
+        Math.abs(p.height - 0.900) < 0.02 || (p.height === 0.050 && y < 1.2)) {
+      m.userData.viewLayer = 'furniture';
+      delete m.userData.member;
+      return;
+    }
+    if (p.depth === 0.150 && p.height > 2.0 && p.height < 2.3) {
+      m.userData.member = 'stud'; return;
+    }
+  }
+  if (!p) {
+    m.userData.member = 'plate';
+    return;
+  }
+  m.userData.member = 'stud';
+}
+
+function finalizeViewLayers() {
+  houseGroup.traverse((m) => {
+    if (!m.isMesh) return;
+    const ud = m.userData;
+    if (ud.post) { ud.viewLayer = 'timber'; ud.member = 'post'; return; }
+    if (ud.usStud) { ud.viewLayer = 'timber'; ud.member = 'stud'; return; }
+    if (ud.brace) { ud.viewLayer = 'timber'; ud.member = 'brace'; return; }
+    if (ud.eaveAngle) { ud.viewLayer = 'steel'; ud.member = 'steel'; return; }
+    if (ud.ceilingJoist || ud.braceCollar) { ud.viewLayer = 'ceiling'; ud.member = 'joist'; return; }
+    if (ud.ceiling) { ud.viewLayer = 'ceiling'; ud.member = ud.member || 'tng'; return; }
+    if (ud.role) { ud.viewLayer = 'furniture'; return; }
+    if (!ud.viewLayer) classifyByMaterial(m, m.material);
+    if (ud.viewLayer === 'insulation') {
+      const box = new THREE.Box3().setFromObject(m);
+      if (box.min.y > 2.55) {
+        ud.viewLayer = 'ceiling';
+        ud.member = 'insulation';
+      }
+    }
+    if (ud.viewLayer === 'timber' && !ud.member) assignTimberMember(m);
+    if (!ud.viewLayer) ud.viewLayer = 'furniture';
+  });
+}
+
+function meshShownInView(m) {
+  const layer = m.userData.viewLayer;
+  const member = m.userData.member;
+  if (!layer || layer === 'overlay') return true;
+  if (layer === 'site') {
+    if (!structureOnly) return true;
+    return member === 'ground' || member === 'compass';
+  }
+  if (structureOnly) {
+    if (layer === 'timber' || layer === 'steel') return true;
+    if (layer === 'ceiling' && member === 'joist') return !roofOff;
+    return false;
+  }
+  if (roofOff && (layer === 'roofCover' || layer === 'ceiling')) return false;
+  return true;
+}
+
+function applyViewModes() {
+  const mats = getMemberMats();
+  houseGroup.traverse((m) => {
+    if (!m.isMesh) return;
+    const show = meshShownInView(m);
+    m.visible = show;
+    const layer = m.userData.viewLayer;
+    const member = m.userData.member;
+    const colourable = (layer === 'timber' || layer === 'steel' || (layer === 'ceiling' && member === 'joist')) && member && mats[member];
+    if (structureOnly && show && colourable) {
+      if (!m.userData._origMat) m.userData._origMat = m.material;
+      m.material = mats[member];
+    } else if (m.userData._origMat) {
+      m.material = m.userData._origMat;
+    }
+  });
+  const legend = document.getElementById('structLegend');
+  if (legend) legend.hidden = !structureOnly;
+  document.body.classList.toggle('structure-only', structureOnly);
+  document.body.classList.toggle('roof-off', roofOff);
+  const btnRoof = document.getElementById('btnRoofOff');
+  const btnStruct = document.getElementById('btnStructure');
+  if (btnRoof) btnRoof.setAttribute('aria-pressed', String(roofOff));
+  if (btnStruct) btnStruct.setAttribute('aria-pressed', String(structureOnly));
+}
+
+function setRoofOff(v) {
+  roofOff = !!v;
+  applyViewModes();
+}
+function setStructureOnly(v) {
+  structureOnly = !!v;
+  applyViewModes();
 }
 
 /** Solid annular wall sector: inner, outer, top, bottom and end-cap reveals.
@@ -315,6 +522,8 @@ function ringBand(rIn, rOut, th0, th1, y0, y1, mat, segs = 8, innerMat = null) {
   inner.castShadow = true;
   inner.receiveShadow = true;
   group.add(inner);
+  classifyByMaterial(shell, mat);
+  classifyByMaterial(inner, innerMat || (mat === materials.cob ? materials.cobInner : mat));
   return group;
 }
 
@@ -350,6 +559,8 @@ function taperedMullion(theta, wIn, wOut, depth, y0, y1, mat) {
   const m = new THREE.Mesh(geo, mat);
   m.castShadow = true;
   m.receiveShadow = true;
+  classifyByMaterial(m, mat);
+  if (mat === materials.timber) { m.userData.viewLayer = 'timber'; m.userData.member = 'stud'; }
   return m;
 }
 
@@ -715,6 +926,9 @@ function buildModel() {
     // angle from +Z (north) to outward: outward is (nx, nz) in x-z plane.
     // Default look: rotation.y = atan2(nx, nz)
     group.rotation.y = Math.atan2(nx, nz);
+    group.traverse((m) => {
+      if (m.isMesh && m.userData.viewLayer === 'timber') m.userData.viewLayer = 'opening';
+    });
     houseGroup.add(group);
   }
 
@@ -731,10 +945,13 @@ function buildModel() {
     group.position.set(p.x, 0, p.y);
     group.rotation.y = Math.atan2(nx, nz);
     // threshold, jambs and head so the opening reads as a door
-    addBox(group, clearW, 0.040, WALL_T, materials.timber, 0, 0.020, 0);
-    addBox(group, 0.070, openingH, 0.070, materials.timber, -clearW / 2 + 0.035, openingH / 2, 0);
-    addBox(group, 0.070, openingH, 0.070, materials.timber,  clearW / 2 - 0.035, openingH / 2, 0);
-    addBox(group, clearW, 0.070, 0.070, materials.timber, 0, openingH - 0.035, 0);
+    const doorFrame = [
+      addBox(group, clearW, 0.040, WALL_T, materials.timber, 0, 0.020, 0),
+      addBox(group, 0.070, openingH, 0.070, materials.timber, -clearW / 2 + 0.035, openingH / 2, 0),
+      addBox(group, 0.070, openingH, 0.070, materials.timber,  clearW / 2 - 0.035, openingH / 2, 0),
+      addBox(group, clearW, 0.070, 0.070, materials.timber, 0, openingH - 0.035, 0)
+    ];
+    doorFrame.forEach((m) => { m.userData.viewLayer = 'opening'; });
     if (kind === 'gardendoor') {
       const w1 = clearW * 0.56;
       const w2 = clearW - w1;
@@ -782,7 +999,9 @@ function buildModel() {
 
   function addWindowPane(w, h) {
     const g = new THREE.Group();
-    addBox(g, w, h, 0.070, materials.timber, 0, 0, 0).scale.set(1,1,1);
+    const paneFrame = addBox(g, w, h, 0.070, materials.timber, 0, 0, 0);
+    paneFrame.scale.set(1,1,1);
+    paneFrame.userData.viewLayer = 'opening';
     const gl = addBox(g, w - 0.06, h - 0.06, 0.012, materials.glass, 0, 0, 0);
     gl.castShadow = false;
     return g;
@@ -796,7 +1015,8 @@ function buildModel() {
     const leafW = Math.max(0.05, w - inset);
     addBox(leaf, leafW, h, depth, materials.door, dir * leafW / 2, h / 2, 0);
     // Meeting stile so a pair of leaves reads as two doors, not one slab.
-    addBox(leaf, 0.018, h, depth + 0.012, materials.timber, dir * (leafW - 0.009), h / 2, 0);
+    const stile = addBox(leaf, 0.018, h, depth + 0.012, materials.timber, dir * (leafW - 0.009), h / 2, 0);
+    stile.userData.viewLayer = 'door';
     const gl = addBox(leaf, leafW * 0.55, h * 0.4, 0.018, materials.glass, dir * leafW / 2, h * 0.55, 0.01 * dir);
     gl.castShadow = false;
     pivot.add(leaf);
@@ -817,6 +1037,8 @@ function buildModel() {
       const t = v.theta * DEG;
       const m = addBox(houseGroup, w, HEAD_SOF - PL_TOP, d, materials.timber, p.x, (HEAD_SOF + PL_TOP) / 2, p.y);
       m.rotation.y = Math.atan2(Math.sin(t), Math.cos(t));
+      m.userData.viewLayer = 'timber';
+      m.userData.member = 'stud';
     }
   });
 
@@ -875,10 +1097,14 @@ function buildModel() {
     m.position.set(x, soffitFFL(0) + 0.120 * Math.cos(7 * DEG), 0);
     m.castShadow = true;
     m.receiveShadow = true;
+    m.userData.viewLayer = 'timber';
+    m.userData.member = 'beam';
     houseGroup.add(m);
     // scarf mark at mid post
     const scarf = addBox(houseGroup, 0.22, 0.05, 0.60, materials.door, x, beamTopFFL(0) + 0.01, 0);
     scarf.rotation.x = 7 * DEG;
+    scarf.userData.viewLayer = 'timber';
+    scarf.userData.member = 'beam';
   });
 
   // Purlins (level). Eave pieces have their outer face at y = ±6 200 (CL ±6 125).
@@ -900,6 +1126,7 @@ function buildModel() {
   roof.position.set(roofMidX, coverFFL(0) + 0.030 * Math.cos(7 * DEG), 0);
   roof.castShadow = true;
   roof.receiveShadow = false;
+  tagLayer(roof, 'roofCover');
   houseGroup.add(roof);
   roofMesh = roof;
   // Dedicated timber underside, offset below the panel so it never self-shadows.
@@ -908,6 +1135,7 @@ function buildModel() {
   roofUnder.position.set(roofMidX, coverFFL(0) - 0.035, 0);
   roofUnder.receiveShadow = false;
   roofUnder.castShadow = false;
+  tagLayer(roofUnder, 'roofCover');
   houseGroup.add(roofUnder);
 
   // Knee braces
@@ -1060,8 +1288,12 @@ function buildModel() {
     tenon.castShadow = false;
     // two wedges, trimmed flush with the plate top
     const wedgeMat = materials.door;
-    addBox(houseGroup, 0.012, 0.008, 0.040, wedgeMat, mm(p.x) - 0.014, plateTop - 0.004, wz(mm(p.y))).castShadow = false;
-    addBox(houseGroup, 0.012, 0.008, 0.040, wedgeMat, mm(p.x) + 0.014, plateTop - 0.004, wz(mm(p.y))).castShadow = false;
+    const w1 = addBox(houseGroup, 0.012, 0.008, 0.040, wedgeMat, mm(p.x) - 0.014, plateTop - 0.004, wz(mm(p.y)));
+    const w2 = addBox(houseGroup, 0.012, 0.008, 0.040, wedgeMat, mm(p.x) + 0.014, plateTop - 0.004, wz(mm(p.y)));
+    w1.castShadow = false;
+    w2.castShadow = false;
+    w1.userData.viewLayer = 'timber'; w1.userData.member = 'post';
+    w2.userData.viewLayer = 'timber'; w2.userData.member = 'post';
     colliders.push({ type: 'post', x: mm(p.x), z: wz(mm(p.y)), r: 0.12 });
   });
   // utility door (south, hinge west, opens out)
@@ -1445,7 +1677,7 @@ function buildModel() {
       Math.max(...zs)-Math.min(...zs)+0.02, materials.white,
       (Math.min(...xs)+Math.max(...xs))/2, 0.875, (Math.min(...zs)+Math.max(...zs))/2);
   })();
-  polyBlock(F.stove, 0.900, 0, materials.metal);
+  tagLayer(polyBlock(F.stove, 0.900, 0, materials.metal), 'furniture');
   function fixture(pt, name) {
     const x = mm(pt[0]), z = wz(mm(pt[1]));
     addBox(houseGroup, 0.40, 0.40, 0.40, materials.white, x, 0.20, z);
@@ -1826,7 +2058,11 @@ function buildModel() {
     };
   })();
 
-  addCompassRose(houseGroup, GRADE);
+  const compass = addCompassRose(houseGroup, GRADE);
+  tagLayer(compass, 'site', 'compass');
+
+  finalizeViewLayers();
+  applyViewModes();
 
   return { braceMeshes, counterBox, rIn, rOut, openings };
 }
@@ -2783,6 +3019,12 @@ function bindUI() {
       if (btn) setView(btn.dataset.view);
     });
   }
+  document.getElementById('btnRoofOff').addEventListener('click', () => {
+    setRoofOff(!roofOff);
+  });
+  document.getElementById('btnStructure').addEventListener('click', () => {
+    setStructureOnly(!structureOnly);
+  });
   document.getElementById('btnMeasure').addEventListener('click', (e) => {
     measureOn = !measureOn;
     e.currentTarget.setAttribute('aria-pressed', String(measureOn));
@@ -2961,6 +3203,9 @@ window.__roundhouse = {
     collide(player);
     player.y = y;
   },
+  setRoofOff,
+  setStructureOnly,
+  getViewModes: () => ({ roofOff, structureOnly }),
   setOrbit(x,y,z, tx=2, ty=1.6, tz=0) {
     if (mode !== 'orbit') setMode('orbit', { keepCamera: true });
     fly = null;

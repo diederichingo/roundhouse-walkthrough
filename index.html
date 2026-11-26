@@ -15,19 +15,32 @@
   <div id="ui">
     <header class="top">
       <h1>Els’s roundhouse, Penamacor
-        <span>Option B walkthrough · v1m · not for construction</span>
+        <span>Option B walkthrough · v1n · not for construction</span>
       </h1>
       <div class="modes" role="group" aria-label="View mode">
         <button id="btnOrbit" aria-pressed="true">Orbit</button>
         <button id="btnWalk" aria-pressed="false">Walk</button>
       </div>
-      <div class="tools">
+      <div class="tools" role="group" aria-label="View options">
+        <button class="tool" id="btnRoofOff" aria-pressed="false" aria-label="Roof off">Roof off</button>
+        <button class="tool" id="btnStructure" aria-pressed="false" aria-label="Structure only">Structure</button>
         <button class="tool clash" id="btnClash" aria-pressed="false">Clashes</button>
         <button class="tool" id="btnHeights" aria-pressed="false">Heights</button>
         <button class="tool" id="btnMeasure" aria-pressed="false">Tape</button>
       </div>
     </header>
     <button id="togglePanel" aria-label="Toggle panel">i</button>
+    <div id="structLegend" hidden>
+      <div class="leg-title">Structure</div>
+      <div class="leg-item"><i style="background:#c56a2d"></i>Posts</div>
+      <div class="leg-item"><i style="background:#e8b63a"></i>Beams</div>
+      <div class="leg-item"><i style="background:#2a9d8f"></i>Purlins</div>
+      <div class="leg-item"><i style="background:#e76f27"></i>Braces</div>
+      <div class="leg-item"><i style="background:#d8c56a"></i>Joists</div>
+      <div class="leg-item"><i style="background:#5b86c7"></i>Studs</div>
+      <div class="leg-item"><i style="background:#9b6fb8"></i>Plates</div>
+      <div class="leg-item"><i style="background:#d0d5d8"></i>Steel</div>
+    </div>
     <aside id="panel">
       <h2>Sun · Penamacor</h2>
       <div class="row">
@@ -120,6 +133,6 @@
     }
   }
   </script>
-  <script type="module" src="js/app.js?v=1m"></script>
+  <script type="module" src="js/app.js?v=1n"></script>
 </body>
 </html>

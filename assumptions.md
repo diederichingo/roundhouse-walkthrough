@@ -146,3 +146,8 @@ The living-room Eames lounge chair was already removed in the first v1k commit. 
 - Tom decided the roof insulation goes **inside**. The T&G ceiling is kept; the insulation-location CHECK is dropped. Product (wood-fibre / Volcalis preferred) and joist hangers remain CHECK.
 - The four interior E–W brace heads at the centre purlin (tops 3 574 mm vs T&G 3 504 mm) pass through a trimmed opening with a timber collar. That clash is cleared.
 - US studs are **50 mm** in the plane, 150 mm across the wall. The two studs that left 23 mm bays at the E/W ring posts (88.3° / 271.7°) are omitted, as is the 0° stud; count **50**.
+
+
+## v1n — Roof off and Structure only view toggles
+
+No geometry change. Two view toggles, usable in Orbit and Walk, and combinable: **Roof off** hides the roof panels, membrane, T&G, ceiling joists, brace collars and roof insulation so you can look down into the rooms (walls, furniture and figures stay). **Structure only** shows the timber frame (posts, main beams, purlins, braces, joists, studs, plates) and steel connectors, coloured by member type, with a compact legend; cob/plaster, insulation, panels, glazing, doors, furniture and figures are hidden. There are no rafters in this roof (purlins and panels). Turning a toggle off restores the previous view.
