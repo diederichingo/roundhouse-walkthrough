@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1o. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1p. Rev 2026-11-25f. Walls are a sandwich, not solid cob.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1o';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1p';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -213,6 +213,11 @@ function makeMaterials() {
   materials.galvanised = new THREE.MeshStandardMaterial({ color: 0xc6cac6, roughness: 0.28, metalness: 0.82, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   // Pre-galv zinc for rainwater goods (not structural steel).
   materials.gutter = new THREE.MeshStandardMaterial({ color: 0x9aa19a, roughness: 0.38, metalness: 0.72 });
+  materials.ply = new THREE.MeshStandardMaterial({ color: 0xd8c9a6, roughness: 0.72, metalness: 0 });
+  materials.curtain = new THREE.MeshStandardMaterial({
+    color: 0x6b3a3a, roughness: 0.9, metalness: 0, transparent: true, opacity: 0.82,
+    side: THREE.DoubleSide, depthWrite: false
+  });
   materials.clash = new THREE.MeshBasicMaterial({
     color: 0xe24b3b, transparent: true, opacity: 0.55, depthTest: true, side: THREE.DoubleSide
   });
@@ -284,6 +289,10 @@ function classifyByMaterial(m, mat) {
   } else if (materials.dpc && first === materials.dpc) {
     ud.viewLayer = 'site';
     ud.member = 'plinth';
+  } else if (first === materials.ply || first === materials.curtain) {
+    ud.viewLayer = 'furniture';
+  } else if (first === materials.gutter) {
+    ud.viewLayer = 'rainwater';
   } else if (first === materials.white) {
     ud.viewLayer = 'furniture';
   } else if (first === materials.clash || first === materials.clashAmber || first === materials.clashLine || first === materials.headroom || first === materials.measure) {
@@ -675,10 +684,11 @@ function buildModel() {
   const WIN_HEAD = 2.300;
   const HEAD_SOF = 2.375;
   const HEAD_TOP = 2.475;
-  const K_SILL = 1.200;       // window frame bottom (size and sill still assumed)
-  const K_RAIL_TOP = 1.185;   // kitchen sill rail top AFF (Roundhouse answer to v1j)
+  const K_SILL = (G.kitchenSill || 1260) * 0.001; // B-15: sill ≈ 1 260 (160 mm above the 1 100 shelf)
+  const K_HEAD = (G.kitchenHead || 2360) * 0.001; // 1 260 + 1 100; 60 mm above the previous 2 300 window-top rule
+  const K_RAIL_TOP = 1.185;   // kept for reference; the old rail does not apply to window 15 as drawn
   const K_RAIL_H = 0.100;
-  const K_RAIL_BOT = K_RAIL_TOP - K_RAIL_H; // 1.085; cob under the rail = 715 mm from the sole
+  const K_RAIL_BOT = K_RAIL_TOP - K_RAIL_H;
   const CURVE_T = 0.200; // inner wall, UNCONFIRMED (proposal CHECK: 100 mm frame + 2×50 mm skins)
   const PACKER = 0.015;  // 15 mm packer on the sole under windows with no under-sill
   const FIT_GAP = 0.015; // intended fit gap (shims + sill tape) each side of the unit
@@ -787,6 +797,27 @@ function buildModel() {
   // cold band. 20 mm slip joint stays; laths and skins stop short of the moving roof.
   // US member is 150 × 50 (was 100 × 50), 150 mm across the wall, flush with the head plate.
   const US_SPACING = 0.600;
+  function addUpperClosingBand(b0, b1, y0, y1, segsN = 3) {
+    if (y1 <= y0 + 0.01 || b1 <= b0 + 0.04) return;
+    houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, y0, y1, materials.cob, segsN));
+    houseGroup.add(ringBand(rIn, rFrameIn, b0, b1, y0, y1, materials.cobInner, segsN));
+    if (y1 > HEAD_TOP + 0.02) {
+      const iy0 = Math.max(y0, HEAD_TOP);
+      if (y1 > iy0 + 0.02) houseGroup.add(ringBand(rFrameIn, rFrameOut, b0, b1, iy0, y1, materials.insulation, segsN));
+    }
+  }
+  function addUpperClosing(b0, b1, y0, y1) {
+    const HW = G.highWindow;
+    if (!HW || b1 < HW.th_e || b0 > HW.th_w) { addUpperClosingBand(b0, b1, y0, y1); return; }
+    const o0 = HW.th_e, o1 = HW.th_w, oy0 = mm(HW.sill), oy1 = mm(HW.head);
+    if (b0 < o0) addUpperClosingBand(b0, Math.min(b1, o0), y0, y1);
+    if (b1 > o1) addUpperClosingBand(Math.max(b0, o1), b1, y0, y1);
+    const mid0 = Math.max(b0, o0), mid1 = Math.min(b1, o1);
+    if (mid1 > mid0) {
+      if (y0 < oy0) addUpperClosingBand(mid0, mid1, y0, Math.min(y1, oy0));
+      if (y1 > oy1) addUpperClosingBand(mid0, mid1, Math.max(y0, oy1), y1);
+    }
+  }
   segs.forEach((s) => {
     // Skins stop at the posts so the timber stays exposed (or lime-washed).
     const v0 = verts.find((v) => Math.abs(v.theta - s.th0) < 1e-4);
@@ -801,13 +832,7 @@ function buildModel() {
       const mid = polar((t0 + t1) / 2, R);
       const top = coverFFL(-mid.y) - 0.020;
       if (top > HEAD_SOF + 0.02) {
-        for (const [b0, b1] of rangesExceptSection(t0, t1)) {
-          houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, HEAD_SOF, top, materials.cob, 3));
-          houseGroup.add(ringBand(rIn, rFrameIn, b0, b1, HEAD_SOF, top, materials.cobInner, 3));
-          if (top > HEAD_TOP + 0.02) {
-            houseGroup.add(ringBand(rFrameIn, rFrameOut, b0, b1, HEAD_TOP, top, materials.insulation, 3));
-          }
-        }
+        for (const [b0, b1] of rangesExceptSection(t0, t1)) addUpperClosing(b0, b1, HEAD_SOF, top);
       }
     }
   });
@@ -834,6 +859,8 @@ function buildModel() {
       if (gap < MIN_BAY) { tooTight = true; break; }
     }
     if (tooTight) continue;
+    const HW = G.highWindow;
+    if (HW && th > HW.th_e && th < HW.th_w) continue;
     const p = polar(th, R);
     const top = coverFFL(-p.y) - 0.020;
     const h = top - HEAD_TOP;
@@ -890,17 +917,12 @@ function buildModel() {
       sandwichRing(a0, a1, WIN_HEAD, HEAD_SOF, 4);
       addWindow(a0, a1, SILL, WIN_HEAD, kind === 'big' ? 1.27 : 0.72, 1.90);
     } else if (kind === 'kitchen') {
-      // Cob under the 100 mm rail = 715 mm (sole top 370 to rail bottom 1 085).
-      // Rail top 1 185 AFF; window sill (frame bottom) stays 1 200; 15 mm fit gap.
-      sandwichRing(a0, a1, PL_TOP, K_RAIL_BOT, 6);
-      for (const [b0, b1] of rangesExceptSection(a0, a1)) {
-        houseGroup.add(ringBand(rFrameOut, rOut, b0, b1, K_RAIL_BOT, K_RAIL_TOP, materials.cob, 6));
-        houseGroup.add(ringBand(rIn, rFrameIn, b0, b1, K_RAIL_BOT, K_RAIL_TOP, materials.cobInner, 6));
-      }
-      houseGroup.add(ringBand(R - 0.075, R + 0.075, a0, a1, K_RAIL_BOT, K_RAIL_TOP, materials.timber, 6));
-      houseGroup.add(ringBand(rIn, rOut, a0, a1, K_RAIL_TOP, K_SILL, materials.sillTape, 4));
-      sandwichRing(a0, a1, WIN_HEAD, HEAD_SOF, 4);
-      addWindow(a0, a1, K_SILL, WIN_HEAD, 0.90, 1.10);
+      // Window 15, west of the N post: 900 × 1 100, sill ≈ 1 260 (B-15), head 2 360.
+      // Sandwich under-sill up to the 15 mm fit gap; the old 1 185 rail does not apply here.
+      sandwichRing(a0, a1, PL_TOP, K_SILL - FIT_GAP, 6);
+      houseGroup.add(ringBand(rIn, rOut, a0, a1, K_SILL - FIT_GAP, K_SILL, materials.sillTape, 4));
+      sandwichRing(a0, a1, K_HEAD, HEAD_SOF, 4);
+      addWindow(a0, a1, K_SILL, K_HEAD, 0.90, 1.10);
     } else if (kind === 'gardendoor' || kind === 'backdoor') {
       addDoorOpening(s, a0, a1, kind);
     }
@@ -962,14 +984,14 @@ function buildModel() {
       const w2 = clearW - w1;
       const leafH = unitH;
       // Wider leaf on local −X, narrower on +X. Each leaf extends from its jamb into the opening.
-      const d1 = makeDoorLeaf(w1, leafH, frameD, 'in', +1);
-      const d2 = makeDoorLeaf(w2, leafH, frameD, 'in', -1);
+      const d1 = makeDoorLeaf(w1, leafH, frameD, 'out', +1);
+      const d2 = makeDoorLeaf(w2, leafH, frameD, 'out', -1);
       d1.pivot.position.set(-clearW / 2, 0, 0);
       d2.pivot.position.set( clearW / 2, 0, 0);
       group.add(d1.pivot, d2.pivot);
       doors.push({
         name: 'Garden doors', kind, group, leaves: [d1, d2], open: false,
-        a0, a1, p, nx, nz, inward: true, clearW, openingH
+        a0, a1, p, nx, nz, inward: false, clearW, openingH
       });
     } else {
       // back door: 70% leaf, side light south, hinge north, opens out
@@ -1467,17 +1489,27 @@ function buildModel() {
   const uHalf = WALL_T / 2; // 125 mm: 250 mm sandwich, same as the house
   const uZSouth = Math.max(uz0, uz1), uZNorth = Math.min(uz0, uz1);
   const uInX0 = ux0 + uHalf, uInX1 = ux1 - uHalf, uInZ0 = uZNorth + uHalf, uInZ1 = uZSouth - uHalf;
-  const uPlX0 = ux0 - 0.200, uPlX1 = ux1 + 0.200, uPlZ0 = uz0 - 0.200, uPlZ1 = uz1 + 0.200;
+  const uPlX0 = ux0 - 0.200, uPlX1 = ux1 + 0.200;
+  const uPlZ0 = Math.min(uz0, uz1) - 0.200, uPlZ1 = Math.max(uz0, uz1) + 0.200;
   const plateTop = 2.650;
-  const doorH = 2.100;
-  const doorW = 0.800;
-  const doorX0 = mm(U.door_x0), doorX1 = mm(U.door_x1); // 6.070-6.870
+  const doorH = mm(U.door_height || 2100); // 2 100 ASSUMED
+  const doorW = mm(U.door_clear || 800);
+  const doorX0 = mm(U.door_x0), doorX1 = mm(U.door_x1); // 6.070–6.950, 880 opening
 
   // utility floor
   addBox(houseGroup, uclW - WALL_T, 0.02, Math.abs(uclD) - WALL_T, materials.earth, (ux0+ux1)/2, 0.01, (uz0+uz1)/2).castShadow = false;
-  // plinth U-shape (east sits on strip). Simple full rectangle plinth with door notch on south.
+  // Plinth around the utility, 400 mm, with a notch on the north at the door (item 1).
   addBox(houseGroup, uPlX1-uPlX0, 0.400, uPlZ1-uPlZ0, materials.stone, (uPlX0+uPlX1)/2, GRADE+0.200, (uPlZ0+uPlZ1)/2);
-  // cut visual door notch: a grade-coloured block? skip — threshold will cover
+  {
+    const notchZ0 = uPlZ0; // north outer face
+    const notchZ1 = uZNorth; // wall centreline
+    const notch = addBox(houseGroup, doorX1 - doorX0, 0.42, Math.max(0.05, notchZ1 - notchZ0),
+      materials.earth, (doorX0 + doorX1) / 2, GRADE + 0.200, (notchZ0 + notchZ1) / 2);
+    notch.castShadow = false;
+    // Timber threshold in the opening, top at FFL (ASSUMED 40 mm).
+    addBox(houseGroup, doorX1 - doorX0, 0.040, WALL_T + 0.04, materials.timber,
+      (doorX0 + doorX1) / 2, 0.020, uZNorth);
+  }
   // Sandwich utility walls: 50 cob + 150 insulation + 50 cob, centred on the 150 mm frame line.
   // thickAxis is the wall normal; outer is +1 when the +axis face is the outside.
   function sandwichSlab(cx, cz, len, thickAxis, y0, y1, outer) {
@@ -1500,17 +1532,25 @@ function buildModel() {
   const uMidZ = (uZSouth + uZNorth) / 2;
   const uLenEW = (ux1 - uHalf) - (ux0 + uHalf);
   const uMidX = (ux0 + ux1) / 2;
-  // West / east run the full outer length (corners included). North / south span between their inner faces.
+  // West, south and north (with the door) are the house sandwich. The east wall is
+  // the timber installation wall (item 8): cob outside, 22 mm ply inside, no inner cob.
   sandwichSlab(ux0, uMidZ, uLenNS, 'x', PL_TOP, plateTop, -1);
-  sandwichSlab(ux1, uMidZ, uLenNS, 'x', PL_TOP, plateTop, +1);
-  sandwichSlab(uMidX, uZNorth, uLenEW, 'z', PL_TOP, plateTop, -1);
-  const sZ = uz0; // south wall centreline (world +Z)
+  sandwichSlab(uMidX, uZSouth, uLenEW, 'z', PL_TOP, plateTop, +1);
+  // East installation wall (outer cob + frame, inner ply).
+  {
+    const h = plateTop - PL_TOP, ym = (PL_TOP + plateTop) / 2;
+    addBox(houseGroup, SKIN_T, h, uLenNS, materials.cob, ux1 + uHalf - SKIN_T / 2, ym, uMidZ);
+    addBox(houseGroup, FRAME_T, h, uLenNS, materials.insulation, ux1, ym, uMidZ);
+    addBox(houseGroup, 0.022, h, uLenNS - 0.04, materials.ply, ux1 - uHalf + 0.011, ym, uMidZ);
+  }
+  // North wall, door 800 clear / 880 opening, hinged east, opens out (item 1).
+  const nZ = uZNorth;
   const leftW = doorX0 - (ux0 + uHalf);
   const rightW = (ux1 - uHalf) - doorX1;
-  if (leftW > 0.02) sandwichSlab(ux0 + uHalf + leftW / 2, sZ, leftW, 'z', PL_TOP, plateTop, +1);
-  if (rightW > 0.02) sandwichSlab(doorX1 + rightW / 2, sZ, rightW, 'z', PL_TOP, plateTop, +1);
+  if (leftW > 0.02) sandwichSlab(ux0 + uHalf + leftW / 2, nZ, leftW, 'z', PL_TOP, plateTop, -1);
+  if (rightW > 0.02) sandwichSlab(doorX1 + rightW / 2, nZ, rightW, 'z', PL_TOP, plateTop, -1);
   if (doorH < plateTop) {
-    sandwichSlab((doorX0 + doorX1) / 2, sZ, doorX1 - doorX0, 'z', doorH, plateTop, +1);
+    sandwichSlab((doorX0 + doorX1) / 2, nZ, doorX1 - doorX0, 'z', doorH, plateTop, -1);
   }
   // top plate
   addBox(houseGroup, (ux1-ux0)+0.15, 0.100, (uz1-uz0)+0.15, materials.timber,
@@ -1532,25 +1572,16 @@ function buildModel() {
     w2.userData.viewLayer = 'timber'; w2.userData.member = 'post';
     colliders.push({ type: 'post', x: mm(p.x), z: wz(mm(p.y)), r: 0.12 });
   });
-  // utility door (south, hinge west, opens out)
-  const uDoor = makeDoorLeaf(doorW, doorH, 0.070, 'out');
+  // utility door (north wall, hinge east, opens out / north = −Z).
+  const uDoor = makeDoorLeaf(doorW, doorH, 0.070, 'out', -1);
   const uPivot = uDoor.pivot;
-  uPivot.position.set(doorX0, 0, uz0);
-  // south wall faces -Z (south is -Z? drawing y is north = world Z, south is -Z).
-  // Outward is -Z. Hinge on west (doorX0). Leaf should extend toward +X (east) in the opening.
-  // Default leaf extends +X from pivot. Opening out means rotating toward -Z, i.e. +90° around Y? 
-  // rotation.y positive is CCW from above (from +X toward +Z).
-  // From closed (leaf along +X, in the wall, z=uz0) to open out (leaf along -Z).
-  // From +X to -Z is rotation.y = +90°? +X to +Z is +90°? 
-  // rotation.y: a point (w,0,0) goes to (w cos y, 0, -w sin y) in Three.js (Y-up).
-  // Three.js rotation.y positive: x' = x cos - z sin, z' = x sin + z cos.
-  // Point (w,0,0) -> (w cos, 0, w sin). To -Z, we need sin = -1, y = -90°.
+  uPivot.position.set(doorX1, 0, nZ);
   uDoor.outward = true;
   houseGroup.add(uPivot);
   doors.push({
     name: 'Utility door', kind: 'utility', group: uPivot, leaves: [uDoor],
     open: false, inward: false, clearW: doorW, openingH: doorH,
-    x0: doorX0, x1: doorX1, z: uz0
+    x0: doorX0, x1: doorX1, z: nZ
   });
 
   // East strip (at grade)
@@ -1755,30 +1786,23 @@ function buildModel() {
   }
   braceHeads.forEach(addBraceCollar);
 
-  // Utility T&G, inset 20 mm from the inner faces.
+  // Utility has no separate ceiling (item 7): walls close up to the main roof.
+  // Insulation and T&G stay in the house only.
   const uCeilX0 = uInX0 + CEIL_GAP, uCeilX1 = uInX1 - CEIL_GAP;
   const uCeilZ0 = uInZ0 + CEIL_GAP, uCeilZ1 = uInZ1 - CEIL_GAP;
-  const uLoop = rectLoop(uCeilX0, uCeilZ0, uCeilX1, uCeilZ1);
-  const tngUtil = meshFromLoop(uLoop, yTng0, materials.tng);
-  if (tngUtil) tngUtil.userData.ceiling = true;
 
-  // 150 mm insulation under the panel, between the purlins, interiors only.
+  // 150 mm insulation under the panel, between the purlins, house interiors only.
   for (let i = 0; i < purlinYs.length - 1; i++) {
     const yA = purlinYs[i], yB = purlinYs[i + 1];
     const zLo = Math.min(-yA, -yB) + 0.075; // keep clear of the 150 mm purlin
     const zHi = Math.max(-yA, -yB) - 0.075;
     houseBayPolys(zLo, zHi).forEach((loop) => prismFromLoop(loop, yInsTop0, ROOF_INS_T, materials.insulation));
-    const uPoly = rectLoop(
-      uCeilX0, Math.max(zLo, uCeilZ0),
-      uCeilX1, Math.min(zHi, uCeilZ1)
-    );
-    if (uPoly) prismFromLoop(uPoly, yInsTop0, ROOF_INS_T, materials.insulation);
   }
 
   function addCeilingJoist(x, yS, yN) {
     let z0 = -yS, z1 = -yN;
     if (z0 > z1) { const t = z0; z0 = z1; z1 = t; }
-    const inUtil = x > uCeilX0 && x < uCeilX1;
+    const inUtil = false; // no utility ceiling (item 7)
     const zLim = Math.sqrt(Math.max(0, rCeil * rCeil - x * x));
     let a = z0, b = z1;
     if (Math.abs(x) < rCeil) {
@@ -1816,13 +1840,7 @@ function buildModel() {
     addCeilingJoist(x, purlinYs[0], purlinYs[1]); // south eave cap lookouts (clipped to the circle)
     addCeilingJoist(x, purlinYs[7], purlinYs[8]);
   }
-  // Utility: 5 lines at 550 mm, bays 2–3 (y −3000 to 0).
-  const uJoistMidX = (uCeilX0 + uCeilX1) / 2;
-  for (let i = -2; i <= 2; i++) {
-    const x = uJoistMidX + i * 0.550;
-    addCeilingJoist(x, purlinYs[2], purlinYs[3]);
-    addCeilingJoist(x, purlinYs[3], purlinYs[4]);
-  }
+  // No utility ceiling joists (item 7).
   // Edge trimmers along the inner wall in the N/S caps (on the roof structure, not fixed to the wall).
   function addTrimArc(zSign) {
     const zPur = zSign * 4.500;
@@ -1905,15 +1923,7 @@ function buildModel() {
   polyBlock(F.closetBed, PART_H, 0, materials.timber);
   // Bed is built in furnishInterior (1.40 × 2.00 m mattress, ~480 mm high).
   polyBlock(F.shower, 0.050, 0, materials.white);
-  polyBlock(F.counter, 0.850, 0, materials.timber);
-  // worktop
-  (function () {
-    const xs = F.counter.map(p => mm(p[0])), zs = F.counter.map(p => wz(mm(p[1])));
-    addBox(houseGroup, Math.max(...xs)-Math.min(...xs)+0.02, 0.050,
-      Math.max(...zs)-Math.min(...zs)+0.02, materials.white,
-      (Math.min(...xs)+Math.max(...xs))/2, 0.875, (Math.min(...zs)+Math.max(...zs))/2);
-  })();
-  tagLayer(polyBlock(F.stove, 0.900, 0, materials.metal), 'furniture');
+  // Kitchen counter, hob and the 900 mm stove are rebuilt in buildRevG (straight wall, item 2).
   function fixture(pt, name) {
     const x = mm(pt[0]), z = wz(mm(pt[1]));
     addBox(houseGroup, 0.40, 0.40, 0.40, materials.white, x, 0.20, z);
@@ -1928,17 +1938,383 @@ function buildModel() {
   const interior = furnishInterior({ houseGroup, colliders, F, mm, wz });
   window.__interior = interior;
 
+
+  function buildRevG() {
+    const out = { counterBox: null, worktops: [], checks: {} };
+
+    // --- Item 2: straight cob kitchen wall + widened plinth ---
+    const KW = G.kitchenWall;
+    const wallY = mm(KW.front_r);           // 4.70 drawing north
+    const wallZ = wz(wallY);                // −4.70 world
+    const halfChord = mm(KW.chord) / 2;
+    const rInner = rIn;                     // 4.875
+    const wallTop = mm(KW.top_aff);         // 1.100
+    const postStrip = 0.020;
+    // Widened plinth rim (item 2): 500 mm inside, only over the 1.949 m mid-run,
+    // inner face on the same 4.70 m chord. Added onto the existing 400 mm ring.
+    (function () {
+      const rimHalf = mm(KW.rim_len) / 2;
+      const shape = new THREE.Shape();
+      const xL = -rimHalf, xR = rimHalf;
+      shape.moveTo(xL, wallZ);
+      shape.lineTo(xR, wallZ);
+      const nArc = 16;
+      for (let i = 0; i <= nArc; i++) {
+        const x = xR + (xL - xR) * (i / nArc);
+        const z = -Math.sqrt(Math.max(0, rPlIn * rPlIn - x * x));
+        shape.lineTo(x, z);
+      }
+      shape.closePath();
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.400, bevelEnabled: false });
+      geo.rotateX(-Math.PI / 2);
+      const m = new THREE.Mesh(geo, materials.stone);
+      m.position.y = GRADE;
+      m.castShadow = true;
+      m.receiveShadow = true;
+      classifyByMaterial(m, materials.stone);
+      houseGroup.add(m);
+    })();
+    // Cob wall: two pieces, 20 mm compressible strip at the N post (not bonded).
+    (function () {
+      const gap = 0.100 + postStrip;
+      function wallPiece(xL, xR) {
+        if (xR - xL < 0.05) return;
+        const shape = new THREE.Shape();
+        shape.moveTo(xL, wallZ);
+        shape.lineTo(xR, wallZ);
+        const nArc = 24;
+        for (let i = 0; i <= nArc; i++) {
+          const x = xR + (xL - xR) * (i / nArc);
+          const z = -Math.sqrt(Math.max(0, rInner * rInner - x * x));
+          shape.lineTo(x, z);
+        }
+        shape.closePath();
+        const geo = new THREE.ExtrudeGeometry(shape, { depth: wallTop, bevelEnabled: false });
+        geo.rotateX(-Math.PI / 2);
+        const m = new THREE.Mesh(geo, materials.cobInner);
+        m.position.y = 0;
+        m.castShadow = true;
+        m.receiveShadow = true;
+        tagLayer(m, 'skin');
+        houseGroup.add(m);
+      }
+      wallPiece(-halfChord, -gap);
+      wallPiece(gap, halfChord);
+      colliders.push({
+        type: 'aabb', x0: -halfChord, x1: halfChord,
+        z0: wallZ, z1: -rInner
+      });
+    })();
+
+    // --- Item 2/5: counter 600 deep ASSUMED, 900 high confirmed, hob under window 15 ---
+    const COUNTER_D = 0.600; // ASSUMED (B-15)
+    const COUNTER_H = 0.900;
+    const cZ1 = wallZ + COUNTER_D; // toward centre, −4.10
+    const cX0 = -halfChord, cX1 = halfChord;
+    const carcass = addBox(houseGroup, cX1 - cX0, 0.850, COUNTER_D, materials.timber,
+      0, 0.425, (wallZ + cZ1) / 2);
+    tagLayer(carcass, 'furniture');
+    const top = addBox(houseGroup, cX1 - cX0 + 0.02, 0.050, COUNTER_D + 0.02, materials.white,
+      0, 0.875, (wallZ + cZ1) / 2);
+    tagLayer(top, 'furniture');
+    colliders.push({ type: 'aabb', x0: cX0, x1: cX1, z0: Math.min(wallZ, cZ1), z1: Math.max(wallZ, cZ1) });
+    // Gas hob, ASSUMED 600 × 520, centred under window 15.
+    const hobX = R * Math.sin(186.344 * DEG); // window 15 mid, under the gas hob
+    const hobW = 0.600, hobD = 0.520; // ASSUMED
+    const hob = addBox(houseGroup, hobW, 0.040, hobD, materials.metal,
+      hobX, 0.910, (wallZ + cZ1) / 2);
+    tagLayer(hob, 'furniture');
+    out.counterBox = { x0: cX0, x1: cX1, z0: Math.min(wallZ, cZ1), z1: Math.max(wallZ, cZ1) };
+    out.worktops = [
+      { name: 'counter', ...out.counterBox, top: COUNTER_H },
+      { name: 'hob', x0: hobX - hobW / 2, x1: hobX + hobW / 2,
+        z0: (wallZ + cZ1) / 2 - hobD / 2, z1: (wallZ + cZ1) / 2 + hobD / 2, top: 0.930 }
+    ];
+
+    // --- Item 6: high window, two top-hung outward sashes ---
+    const HW = G.highWindow;
+    if (HW) {
+      const a0 = HW.th_e, a1 = HW.th_w, z0 = mm(HW.sill), z1 = mm(HW.head);
+      const mid = (a0 + a1) / 2;
+      const p = polar(mid, R);
+      const t = mid * DEG;
+      const nx = Math.sin(t), nz = Math.cos(t);
+      const frameD = 0.070, frameT = 0.055;
+      const clearW = (a1 - a0) * DEG * R;
+      const w = Math.max(0.2, clearW), h = z1 - z0;
+      const group = new THREE.Group();
+      addBox(group, frameT, h, frameD, materials.timber, -w / 2 + frameT / 2, 0, 0);
+      addBox(group, frameT, h, frameD, materials.timber,  w / 2 - frameT / 2, 0, 0);
+      addBox(group, w, frameT, frameD, materials.timber, 0, -h / 2 + frameT / 2, 0);
+      addBox(group, w, frameT, frameD, materials.timber, 0,  h / 2 - frameT / 2, 0);
+      const mull = addBox(group, 0.040, h - frameT * 2, frameD, materials.timber, 0, 0, 0);
+      mull.userData.viewLayer = 'opening';
+      const sashW = (w - frameT * 2 - 0.040) / 2;
+      const sashH = h - frameT * 2;
+      const st = 0.045;
+      [-1, 1].forEach((side) => {
+        const sx = side * (sashW / 2 + 0.020);
+        const pivot = new THREE.Group();
+        // Top-hung: pivot at the head of the sash, slightly open outward (local +Z).
+        pivot.position.set(sx, sashH / 2 - 0.008, 0);
+        pivot.rotation.x = -0.22; // ≈ 12.5°, outward
+        const leaf = new THREE.Group();
+        leaf.position.set(0, -sashH / 2, 0);
+        const bars = [
+          addBox(leaf, st, sashH, 0.040, materials.timber, -sashW / 2 + st / 2, 0, 0),
+          addBox(leaf, st, sashH, 0.040, materials.timber,  sashW / 2 - st / 2, 0, 0),
+          addBox(leaf, sashW, st, 0.040, materials.timber, 0, -sashH / 2 + st / 2, 0),
+          addBox(leaf, sashW, st, 0.040, materials.timber, 0,  sashH / 2 - st / 2, 0)
+        ];
+        bars.forEach((m) => { m.userData.viewLayer = 'opening'; });
+        const gl = addBox(leaf, sashW - st * 2, sashH - st * 2, 0.012, materials.glass, 0, 0, 0);
+        gl.castShadow = false;
+        pivot.add(leaf);
+        group.add(pivot);
+      });
+      group.position.set(p.x, (z0 + z1) / 2, p.y);
+      group.rotation.y = Math.atan2(nx, nz);
+      group.traverse((m) => {
+        if (m.isMesh && m.userData.viewLayer === 'timber') m.userData.viewLayer = 'opening';
+      });
+      houseGroup.add(group);
+      // 50 mm trimmer on the west side of the rough opening (item 6).
+      const trimTh = HW.th_trim || (HW.th_w + 50 * 180 / (Math.PI * R * 1000));
+      const tp = polar(trimTh, R);
+      const tt = trimTh * DEG;
+      const trimH = z1 - z0 + 0.030;
+      const trim = addBox(houseGroup, 0.050, trimH, 0.150, materials.timber, tp.x, (z0 + z1) / 2, tp.y);
+      trim.rotation.y = Math.atan2(Math.sin(tt), Math.cos(tt));
+      trim.userData.usStud = true;
+      // Winder rod from the sill down toward the floor (ASSUMED 16 mm rod).
+      const rod = addBox(houseGroup, 0.016, z0 - 0.200, 0.016, materials.metal, p.x + nx * 0.04, (z0 + 0.200) / 2, p.y + nz * 0.04);
+      tagLayer(rod, 'furniture');
+    }
+
+    // --- Item 11: low inlets and shower fan ---
+    (G.vents || []).forEach((v) => {
+      const p = polar(v.th, R);
+      const t = v.th * DEG;
+      const nx = Math.sin(t), nz = Math.cos(t);
+      const y = mm(v.aff);
+      const L = 0.250, r = 0.050;
+      // Sleeve through the 250 mm wall, 5 mm fall out.
+      const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 16), materials.gutter);
+      sleeve.rotation.z = Math.PI / 2;
+      sleeve.rotation.y = Math.atan2(nx, nz);
+      sleeve.position.set(p.x, y, p.y);
+      sleeve.castShadow = false;
+      tagLayer(sleeve, 'skin');
+      houseGroup.add(sleeve);
+      // Inner grille
+      const gr = addBox(houseGroup, 0.12, 0.12, 0.012, materials.metal,
+        p.x - nx * (WALL_T / 2 - 0.01), y, p.y - nz * (WALL_T / 2 - 0.01));
+      gr.rotation.y = Math.atan2(nx, nz);
+      tagLayer(gr, 'skin');
+      if (v.kind !== 'low inlet') {
+        // F1 fan box in the upper closing, ASSUMED 160 mm square cowl outside.
+        const cowl = addBox(houseGroup, 0.16, 0.16, 0.08, materials.metal,
+          p.x + nx * (WALL_T / 2 + 0.04), y, p.y + nz * (WALL_T / 2 + 0.04));
+        cowl.rotation.y = Math.atan2(nx, nz);
+        tagLayer(cowl, 'skin');
+      }
+    });
+
+    // --- Item 9: ledge on the bed-side face of the curved inner wall ---
+    const Ledge = G.ledge;
+    if (Ledge && Ledge.face && Ledge.face.length > 1) {
+      const pts = Ledge.face.map(([x, y]) => new THREE.Vector3(mm(x), mm(Ledge.top_aff) - 0.014, wz(mm(y))));
+      const edge = (Ledge.edge || Ledge.face).map(([x, y]) => new THREE.Vector3(mm(x), mm(Ledge.top_aff) - 0.014, wz(mm(y))));
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        const ea = edge[Math.min(i, edge.length - 1)], eb = edge[Math.min(i + 1, edge.length - 1)];
+        const mid = a.clone().add(b).multiplyScalar(0.5);
+        const emid = ea.clone().add(eb).multiplyScalar(0.5);
+        const boardMid = mid.clone().add(emid).multiplyScalar(0.5);
+        const len = Math.hypot(b.x - a.x, b.z - a.z);
+        if (len < 0.03) continue;
+        const m = addBox(houseGroup, len, 0.028, 0.150, materials.timber, boardMid.x, boardMid.y, boardMid.z);
+        m.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x);
+        tagLayer(m, 'furniture');
+      }
+      // A few visible brackets (concealed steel, slightly under the board).
+      for (let i = 2; i < pts.length - 1; i += 7) {
+        const a = pts[i], ea = edge[Math.min(i, edge.length - 1)];
+        const mid = a.clone().add(ea).multiplyScalar(0.5);
+        const br = addBox(houseGroup, 0.012, 0.04, 0.12, materials.galvanised, mid.x, mid.y - 0.025, mid.z);
+        tagLayer(br, 'furniture');
+      }
+    }
+
+    // --- Item 4: bathroom curtain, partition end to pier 3 ---
+    (function () {
+      const pier = G.segments.find((s) => s.no === 3);
+      if (!pier) return;
+      const mid = (pier.th0 + pier.th1) / 2;
+      const p3 = polar(mid, rIn);
+      // Partition end: bathroom/bed partition x ≈ 2.258, south end from furniture
+      const part = (G.furniture && G.furniture.partitions || []).find((q) => /bathroom/i.test(q.name || ''));
+      let px = 2.258, pz;
+      if (part) {
+        px = mm(part.b[0]);
+        pz = wz(mm(part.b[1]));
+      } else {
+        pz = 2.833;
+      }
+      const railY = 2.200; // unfounded partition height; rail along the same, ASSUMED
+      const rail = [];
+      const n = 8;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        rail.push(new THREE.Vector3(px + (p3.x - px) * t, railY, pz + (p3.y - pz) * t));
+      }
+      for (let i = 0; i < rail.length - 1; i++) {
+        const a = rail[i], b = rail[i + 1];
+        const len = a.distanceTo(b);
+        const midp = a.clone().add(b).multiplyScalar(0.5);
+        const rod = addBox(houseGroup, len, 0.018, 0.018, materials.metal, midp.x, midp.y, midp.z);
+        rod.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x);
+        tagLayer(rod, 'furniture');
+      }
+      // Curtain panels hanging from the rail (CHECK line).
+      const clothH = 2.000; // ASSUMED, 200 mm above FFL
+      for (let i = 0; i < n; i++) {
+        const a = rail[i], b = rail[i + 1];
+        const len = a.distanceTo(b);
+        const midp = a.clone().add(b).multiplyScalar(0.5);
+        const cloth = addBox(houseGroup, len * 0.98, clothH, 0.012, materials.curtain,
+          midp.x, railY - clothH / 2, midp.z);
+        cloth.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x);
+        cloth.castShadow = false;
+        tagLayer(cloth, 'furniture');
+      }
+    })();
+
+    // --- Item 7: utility upper closing to the main roof, 20 mm slip ---
+    (function () {
+      const slip = 0.020;
+      function utilTopAt(x, z) {
+        // East wall under the x = +9 beam: 20 mm below the beam soffit.
+        const yN = -z;
+        const cover = coverFFL(yN);
+        const beamSof = cover - 0.200 - 0.240;
+        const nearEast = x > ux1 - 0.30;
+        if (nearEast) return Math.min(cover, beamSof) - slip;
+        return cover - slip;
+      }
+      function wallBand(cx, cz, len, axis, outer, y0, y1, style) {
+        if (y1 <= y0 + 0.02) return;
+        const h = y1 - y0, ym = (y0 + y1) / 2;
+        if (style === 'install') {
+          const tOut = SKIN_T, tFrame = FRAME_T, tPly = 0.022;
+          if (axis === 'x') {
+            addBox(houseGroup, tOut, h, len, materials.cob, cx + outer * (WALL_T / 2 - tOut / 2), ym, cz);
+            addBox(houseGroup, tFrame, h, len, materials.insulation, cx, ym, cz);
+            addBox(houseGroup, tPly, h, len, materials.ply, cx - outer * (WALL_T / 2 - tPly / 2), ym, cz);
+          }
+        } else {
+          sandwichSlab(cx, cz, len, axis, y0, y1, outer);
+        }
+      }
+      // Split N/S/W/E into a few stations so the sloped top follows the 7° plane.
+      const stations = 6;
+      // West and east: split N–S, leave a slot at the y = −1 500 purlin (z = 1.5).
+      const purlZ = 1.500, purlHalf = 0.075 + 0.020;
+      for (let i = 0; i < stations; i++) {
+        const z0 = (uZNorth - uHalf) + (uLenNS * i) / stations;
+        const z1 = (uZNorth - uHalf) + (uLenNS * (i + 1)) / stations;
+        const zc = (z0 + z1) / 2, len = z1 - z0;
+        if (z0 < purlZ + purlHalf && z1 > purlZ - purlHalf) {
+          // leave a slip around the purlin; fill below and above if any
+          continue;
+        }
+        wallBand(ux0, zc, len, 'x', -1, plateTop, utilTopAt(ux0, zc), 'sandwich');
+        wallBand(ux1, zc, len, 'x', +1, plateTop, utilTopAt(ux1, zc), 'install');
+      }
+      // North and south, E–W
+      for (let i = 0; i < stations; i++) {
+        const x0 = (ux0 + uHalf) + (uLenEW * i) / stations;
+        const x1 = (ux0 + uHalf) + (uLenEW * (i + 1)) / stations;
+        const xc = (x0 + x1) / 2, len = x1 - x0;
+        wallBand(xc, uZNorth, len, 'z', -1, plateTop, utilTopAt(xc, uZNorth), 'sandwich');
+        wallBand(xc, uZSouth, len, 'z', +1, plateTop, utilTopAt(xc, uZSouth), 'sandwich');
+      }
+    })();
+
+    // --- Item 8: boiler, geyser, shelves on the east installation wall ---
+    (function () {
+      const wallX = uInX1 - 0.011; // just proud of the ply
+      // Boiler hung, up to 150 L — ASSUMED 500 × 500 × 1 200, mid-north of the wall.
+      const boilH = 1.20, boilW = 0.50, boilD = 0.50; // ASSUMED
+      const boilZ = uMidZ - 0.35; // toward north
+      const boilY = 1.20;
+      const boiler = addBox(houseGroup, boilD, boilH, boilW, materials.white, wallX - boilD / 2, boilY, boilZ);
+      tagLayer(boiler, 'furniture');
+      // Geyser at the south end — ASSUMED 350 × 250 × 700.
+      const gH = 0.70, gW = 0.35, gD = 0.25; // ASSUMED
+      const gZ = uInZ1 - 0.35;
+      const geyser = addBox(houseGroup, gD, gH, gW, materials.white, wallX - gD / 2, 1.55, gZ);
+      tagLayer(geyser, 'furniture');
+      // Flue (installer) — ASSUMED 80 mm, up to the beam slip.
+      const flue = new THREE.Mesh(new THREE.CylinderGeometry(0.040, 0.040, 1.20, 10), materials.gutter);
+      flue.position.set(wallX - 0.08, 2.40, gZ);
+      tagLayer(flue, 'furniture');
+      houseGroup.add(flue);
+      // Shelves under the geyser, ASSUMED three 22 mm boards.
+      [0.55, 0.85, 1.15].forEach((y) => {
+        const sh = addBox(houseGroup, 0.28, 0.022, 0.70, materials.ply, wallX - 0.15, y, gZ);
+        tagLayer(sh, 'furniture');
+      });
+      out.geyser = { x: wallX - gD / 2, z: gZ };
+      out.boiler = { x: wallX - boilD / 2, z: boilZ };
+    })();
+
+    // --- Item 1: solar on the west wall, 1 m clear in front (sizes ASSUMED) ---
+    (function () {
+      const wallX = uInX0 + 0.01;
+      // Keep clear of the north door opening (door at nZ, x 6.07–6.95).
+      const invW = 0.50, invH = 0.70, invD = 0.24; // 5.5 kW inverter, ASSUMED
+      const batW = 0.70, batH = 0.80, batD = 0.30; // 10 kWh battery, ASSUMED
+      const zSouth = uMidZ + 0.25;
+      const inv = addBox(houseGroup, invD, invH, invW, materials.metal, wallX + invD / 2, 1.10, zSouth - 0.40);
+      tagLayer(inv, 'furniture');
+      const bat = addBox(houseGroup, batD, batH, batW, materials.white, wallX + batD / 2, 0.50, zSouth + 0.20);
+      tagLayer(bat, 'furniture');
+      out.solar = {
+        inverter: { x: wallX + invD / 2, z: zSouth - 0.40, clearInFront: 1.00, assumed: true },
+        battery: { x: wallX + batD / 2, z: zSouth + 0.20, clearInFront: 1.00, assumed: true }
+      };
+    })();
+
+    // East-wall studs and noggings (item 8), 150 × 50 at ≤ 450 c/c.
+    (function () {
+      const z0 = uZNorth + 0.15, z1 = uZSouth - 0.15;
+      const nStud = Math.max(2, Math.ceil((z1 - z0) / 0.450));
+      const step = (z1 - z0) / nStud;
+      for (let i = 0; i <= nStud; i++) {
+        const z = z0 + i * step;
+        const st = addBox(houseGroup, 0.050, plateTop - PL_TOP, 0.150, materials.timber,
+          ux1, (PL_TOP + plateTop) / 2, z);
+        st.userData.viewLayer = 'timber';
+        st.userData.member = 'stud';
+      }
+      [0.550, 1.000, 1.500, 2.000].forEach((y) => {
+        if (y >= plateTop - 0.05) return;
+        const ng = addBox(houseGroup, 0.050, 0.050, z1 - z0, materials.timber, ux1, y, (z0 + z1) / 2);
+        ng.userData.viewLayer = 'timber';
+        ng.userData.member = 'plate';
+      });
+    })();
+
+    return out;
+  }
+  const revg = buildRevG();
+
+
   // Kitchen work surfaces (all counters confirmed at 900 mm above FFL)
   const COUNTER_H = 0.900;
-  function aabbOf(poly) {
-    const xs = poly.map(p => mm(p[0])), zs = poly.map(p => wz(mm(p[1])));
-    return { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
-  }
-  const counterBox = aabbOf(F.counter);
-  const worktops = [
-    { name: 'counter', ...counterBox, top: COUNTER_H },
-    { name: 'stove', ...aabbOf(F.stove), top: COUNTER_H }
-  ];
+  const counterBox = revg.counterBox;
+  const worktops = revg.worktops;
 
   // Collision: house wall circle, openings
   const openings = [];
@@ -1955,7 +2331,7 @@ function buildModel() {
   colliders.push({ type: 'ring', rIn, rOut, openings });
   colliders.push({ type: 'utility', x0: ux0 - uHalf, x1: ux1 + uHalf, z0: uZNorth - uHalf, z1: uZSouth + uHalf,
     ix0: uInX0, ix1: uInX1, iz0: uInZ0, iz1: uInZ1,
-    doorX0, doorX1, doorZ: uz0 });
+    doorX0, doorX1, doorZ: nZ });
   colliders.push({ type: 'arc', cx: mm(iw.cx), cz: wz(mm(iw.cy)), r: mm(iw.r), half: CURVE_T/2,
     pts: arcPts });
 
@@ -2046,7 +2422,7 @@ function buildModel() {
       bathToInner = distToArc(bp.x, bp.z) - CURVE_T / 2 - 0.200;
     }
     kitchenToInner = distToArc((c.x0 + c.x1) / 2, (c.z0 + c.z1) / 2) - CURVE_T / 2;
-    // Garden doors open inward (east). Larger leaf ~56 % of 1.91 m, south jamb at the W post (0, −5) world z = 0.
+    // Garden doors open outward (west, item 3). Larger leaf ~56 % of 1.91 m, south jamb at the W post.
     const garden = doors.find((d) => d.kind === 'gardendoor');
     if (garden) {
       const leaf = Math.max(...garden.leaves.map((l) => l.w));
@@ -2075,7 +2451,7 @@ function buildModel() {
           if (d < min) min = d;
         }
       }
-      doorSwingGap = { min, leaf, note: 'garden doors open inward; back door opens out, away from the inner wall' };
+      doorSwingGap = { min, leaf, note: 'garden doors open outward (item 3); back door opens out, away from the inner wall' };
     }
     // Beams and braces above the inner-wall head (2 375 AFF).
     let iwBeam = { minSoffit: null, minGapAboveHead: null, atY: null };
@@ -2297,8 +2673,172 @@ function buildModel() {
   const compass = addCompassRose(houseGroup, GRADE);
   tagLayer(compass, 'site', 'compass');
 
+
+  // Rev 2026-11-26g CHECKs, recomputed from the mesh.
+  computedClashes.revg = (function () {
+    const DEG = Math.PI / 180;
+    const w1 = segs.find((s) => s.no === 1);
+    const pier = segs.find((s) => s.no === 3);
+    const sBrace = braceMeshes.find((m) => {
+      const b = m.userData.brace;
+      return b && b.post === 'S ring' && b.dir === 'N-S' && b.side === 1;
+    });
+    const nBrace = braceMeshes.find((m) => {
+      const b = m.userData.brace;
+      return b && b.post === 'N ring' && b.dir === 'N-S' && b.side === -1;
+    });
+    function braceBox(m) {
+      m.updateWorldMatrix(true, true);
+      return new THREE.Box3().setFromObject(m);
+    }
+    // Window 1 west sash at 90° inward: leaf in a plane just east of the S post (x = +0.100).
+    // Clearance to the east face of the S inward knee brace.
+    let w1Sash = null;
+    if (sBrace && w1) {
+      const box = braceBox(sBrace);
+      const postEast = 0.100;
+      const sashPlane = postEast + 0.015; // 15 mm fit / lining, ASSUMED for the check
+      const braceEast = box.max.x;
+      const clear = sashPlane - braceEast;
+      w1Sash = {
+        check: 'Window 1 sash vs S knee brace (90° inward, west sash)',
+        sashPlaneMm: Math.round(sashPlane * 1000),
+        braceEastMm: Math.round(braceEast * 1000),
+        clearMm: Math.round(clear * 1000),
+        planNote: 'about 65 mm (CHECK with Els and Joshua)',
+        undersideMm: Math.round((sBrace.userData.underside || 0) * 1000)
+      };
+    }
+    // High-window east lining (th_e) vs the N inward knee brace.
+    let hwLining = null;
+    const HW = G.highWindow;
+    if (nBrace && HW) {
+      const box = braceBox(nBrace);
+      const p = polar(HW.th_e, R);
+      // lining is a 50 mm band at the east of the rough opening; use the post-west / lining east face.
+      const liningX = p.x; // ≈ −0.100, west face of the N post
+      const braceWest = box.min.x;
+      const clear = liningX - braceWest; // lining is west (more negative) of the brace
+      // Positive clear means the lining is west of the brace's west face? liningX=-0.100, braceWest≈-0.050, clear=-0.050.
+      // Distance is braceWest - liningX if lining is west of brace.
+      const dist = braceWest - liningX;
+      hwLining = {
+        check: 'High-window east lining vs N knee brace',
+        liningXMm: Math.round(liningX * 1000),
+        braceWestMm: Math.round(braceWest * 1000),
+        clearMm: Math.round(dist * 1000),
+        planNote: '≥ 50 mm (CHECK)',
+        sillMm: HW.sill, headMm: HW.head
+      };
+    }
+    // Bed-area closet vs window 1 (plan CHECK).
+    const clos = F.closetBed;
+    const xs = clos.map((p) => mm(p[0])), zs = clos.map((p) => wz(mm(p[1])));
+    const cbox = { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
+    const w1mid = polar((w1.th0 + w1.th1) / 2, rIn);
+    const closestX = Math.max(cbox.x0, Math.min(w1mid.x, cbox.x1));
+    const closestZ = Math.max(cbox.z0, Math.min(w1mid.y, cbox.z1));
+    const closetDist = Math.hypot(w1mid.x - closestX, w1mid.y - closestZ);
+    const closetVsW1 = {
+      check: 'Bed-area closet vs window 1',
+      closet: cbox,
+      window1Inner: { x: w1mid.x, z: w1mid.y },
+      planClearMm: Math.round(closetDist * 1000),
+      note: 'The sketched closet stays by the bed / partition, not in front of window 1. Plan item 4 is a CHECK.'
+    };
+    // Curtain line: partition south end to pier 3.
+    let curtain = null;
+    if (pier) {
+      const part = (F.partitions || []).find((q) => /bathroom/i.test(q.name || ''));
+      const px = part ? mm(part.b[0]) : 2.258;
+      const pz = part ? wz(mm(part.b[1])) : 2.833;
+      const p3 = polar((pier.th0 + pier.th1) / 2, rIn);
+      const w2 = segs.find((s) => s.no === 2);
+      const w2mid = w2 ? polar((w2.th0 + w2.th1) / 2, rIn) : null;
+      curtain = {
+        check: 'Bathroom curtain, partition end to pier 3',
+        from: { x: px, z: pz },
+        to: { x: p3.x, z: p3.y },
+        lengthMm: Math.round(Math.hypot(p3.x - px, p3.y - pz) * 1000),
+        railY: 2.200, // ASSUMED, partition height
+        note: 'Diagonal to pier 3, not a continuation of the partition to the ring (that would meet window 2). CHECK with Els.',
+        wouldHitWindow2IfExtended: true
+      };
+    }
+    // Utility door vs back door, 219 mm in the drawings.
+    const utilDoor = {
+      check: 'Utility door swing vs back door',
+      drawnClearMm: U.backDoorClearanceMm,
+      openingMm: U.door_opening,
+      clearMm: U.door_clear,
+      hinge: U.door_hinge,
+      wall: U.door_wall,
+      heightMm: U.door_height,
+      heightAssumed: true
+    };
+    // Geyser to solar (plan ≈ 2.4 m; B-13 ≈ 2.6 m).
+    const g = revg.geyser, sol = revg.solar;
+    let geyserDist = null;
+    if (g && sol) {
+      const inv = Math.hypot(g.x - sol.inverter.x, g.z - sol.inverter.z);
+      const bat = Math.hypot(g.x - sol.battery.x, g.z - sol.battery.z);
+      geyserDist = {
+        check: 'Geyser to battery / inverter',
+        toInverterMm: Math.round(inv * 1000),
+        toBatteryMm: Math.round(bat * 1000),
+        nearerMm: Math.round(Math.min(inv, bat) * 1000),
+        planMm: 2400,
+        b13Mm: 2600,
+        note: 'Placed as drawn on B-15 / the plan (≈ 2.4 m). B-13 notes ≈ 2.6 m. Kit sizes ASSUMED.'
+      };
+    }
+    // Downpipes vs new south openings.
+    const rawOut = (gutterSpec && gutterSpec.outlets) || [{ x: -5 }, { x: 5 }, { x: 9 }];
+    const outlets = rawOut.map((o) => (typeof o === 'number' ? o : o.x));
+    const southSegs = segs.filter((s) => s.kind !== 'cob' && (s.th0 < 90 || s.th1 > 270));
+    const downpipes = southSegs.map((s) => {
+      const mid = (s.th0 + s.th1) / 2;
+      const p = polar(mid, 5.0);
+      const e0 = polar(s.th0, 5.0), e1 = polar(s.th1, 5.0);
+      const nearest = outlets.map((ox) => {
+        const edgeClear = Math.min(Math.abs(ox - e0.x), Math.abs(ox - e1.x));
+        return { x: ox, clearMm: Math.round(edgeClear * 1000) };
+      });
+      nearest.sort((a, b) => a.clearMm - b.clearMm);
+      return { no: s.no, kind: s.kind, midX: +p.x.toFixed(3), nearest: nearest[0] };
+    });
+    // Kitchen window 15 head vs the old 2 300 rule.
+    const kit = {
+      check: 'Kitchen window 15 sill / head',
+      sillMm: Math.round(K_SILL * 1000),
+      headMm: Math.round(K_HEAD * 1000),
+      unit: [900, 1100],
+      note: 'B-15 dimensions the sill at ≈ 1 260 (160 mm above the 1 100 shelf), so the head is 2 360 — 60 mm above the previous 2 300 window-top rule. Implemented as drawn on B-15. Leftover plan wording still says 1 200–2 300 / rail 1 185.'
+    };
+    let usCount = 0;
+    houseGroup.traverse((m) => { if (m.userData && m.userData.usStud) usCount++; });
+    return {
+      window1SashVsSBrace: w1Sash,
+      hwLiningVsNBrace: hwLining,
+      closetVsWindow1: closetVsW1,
+      curtain,
+      utilityDoor: utilDoor,
+      geyserToSolar: geyserDist,
+      downpipes,
+      kitchenWindow15: kit,
+      usStuds: usCount,
+      solarClearInFrontM: 1.0,
+      kitchenWall: { frontR: 4.70, length: mm(G.kitchenWall.chord), height: 1.100, counterD: 0.600, counterDAssumed: true, counterH: 0.900 },
+      items10and12: {
+        item10: 'Text clean-up only (Option A leftover wording in the plan). Not modelled.',
+        item12: 'Central beam: C24-graded pine at the same section is fine; no round or ungraded poles. Label only; no geometry change.'
+      }
+    };
+  })();
+
   finalizeViewLayers();
   applyViewModes();
+
 
   return { braceMeshes, counterBox, rIn, rOut, openings };
 }
@@ -3463,6 +4003,24 @@ window.__roundhouse = {
   activeView: () => activeView,
   doors: () => doors.map((d) => d.name),
   interior: () => window.__interior,
+  revgChecks: () => (computedClashes && computedClashes.revg) || null,
+  meshesNear(x, z, r = 1.2) {
+    const hits = [];
+    houseGroup.traverse((m) => {
+      if (!m.isMesh) return;
+      const p = new THREE.Vector3();
+      m.getWorldPosition(p);
+      if (Math.hypot(p.x - x, p.z - z) > r) return;
+      const box = new THREE.Box3().setFromObject(m);
+      const sz = box.getSize(new THREE.Vector3());
+      hits.push({
+        layer: m.userData.viewLayer, member: m.userData.member, role: m.userData.role,
+        x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3),
+        sx: +sz.x.toFixed(3), sy: +sz.y.toFixed(3), sz: +sz.z.toFixed(3)
+      });
+    });
+    return hits.sort((a, b) => a.z - b.z);
+  },
   personGaps() {
     const it = window.__interior;
     if (!it) return null;

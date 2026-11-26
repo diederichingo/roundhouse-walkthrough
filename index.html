@@ -15,7 +15,7 @@
   <div id="ui">
     <header class="top">
       <h1>Els’s roundhouse, Penamacor
-        <span>Option B walkthrough · v1o · not for construction</span>
+        <span>Option B walkthrough · v1p · not for construction</span>
       </h1>
       <div class="modes" role="group" aria-label="View mode">
         <button id="btnOrbit" aria-pressed="true">Orbit</button>
@@ -57,11 +57,13 @@
       <input id="sunSlider" type="range" min="0" max="1439" value="840">
       <div id="sunReadout">—</div>
 
-      <p id="raiseNote" class="raise-note">Chosen Option B — 16.5 × 12.4 m roof, 1.5 m east overhang, roof raised 200 mm. Rev 2026-11-25f.</p>
+      <p id="raiseNote" class="raise-note">Chosen Option B — 16.5 × 12.4 m roof, 1.5 m east overhang, roof raised 200 mm. Plan rev 2026-11-26g.</p>
 
       <h2>Views</h2>
       <div id="views">
+        <button type="button" data-view="kitchen">Kitchen (wall and high window)</button>
         <button type="button" data-view="kitchen-person">Kitchen with person</button>
+        <button type="button" data-view="utility-door">Utility door</button>
         <button type="button" data-view="bathroom-person">Bathroom with person</button>
         <button type="button" data-view="living">Living room</button>
         <button type="button" data-view="window-reveal">Window reveal</button>
@@ -69,8 +71,8 @@
         <button type="button" data-view="ceiling">Ceiling</button>
         <button type="button" data-view="south-window-1">South window 1 (from inside)</button>
         <button type="button" data-view="south-window-2">South window 2 (from inside)</button>
-        <button type="button" data-view="south-window-3">South window 3 (from inside)</button>
-        <button type="button" data-view="south-window-4">South window 4 (from inside)</button>
+        <button type="button" data-view="south-window-24">South window 24 (living SW)</button>
+        <button type="button" data-view="south-window-25">South window 25 (living SSW)</button>
       </div>
 
       <h2>Clash checker</h2>
@@ -86,28 +88,29 @@
       <ol id="confirmed">
         <li>Roof 16.5 × 12.4 m, 1.5 m east overhang, raised 200 mm (rev 2026-11-25f).</li>
         <li>Kitchen counters 900 mm above the finished inside floor (all kitchen counters).</li>
-        <li>All window tops 2 300 mm above FFL.</li>
-        <li>Structural timber is Douglas fir, C24 or equivalent.</li>
+        <li>Typical window tops 2 300 mm above FFL. Kitchen window 15 is drawn on B-15 with a sill at ≈ 1 260 and a 1 100 unit, so its head is 2 360 (60 mm above that rule). The high window is 970 × 1 190, sill 2 600, head 3 790.</li>
+        <li>Structural timber is Douglas fir, C24 or equivalent. The central beam may be C24-graded pine at the same section; no round or ungraded poles (rev g item 12).</li>
         <li>House, utility and kitchen under-sill walls are a sandwich: 150 mm timber frame with insulation and up to 50 mm cob/plaster skin each face (250 mm total). The cob skin thins or stops at the posts and knee braces; the timber stays exposed or lime-washed (Roundhouse Control, 25 Nov 2026).</li>
-        <li>Kitchen sill rail top 1 185 mm AFF; the kitchen window sill (frame bottom) stays 1 200 mm. Same 15 mm intended fit gap (shims + sill tape) as the other windows.</li>
+        <li>The old kitchen sill rail (top 1 185 mm, window 1 200–2 300) does not apply to window 15 as drawn on B-15. Leftover plan wording still mentions it.</li>
         <li>The 15 mm gap between the 15 mm packer (top 385 mm) and the 400 mm window sill is an intended fit gap, filled with shims and sill tape — not a mismatch.</li>
       </ol>
 
       <h2>Assumed</h2>
       <ol id="assumptions">
         <li>Curved inner wall 200 mm × 2 355 mm (unconfirmed / CHECK): 100 mm frame + 50 mm cob/plaster each face, flush with the 200 mm plinth, from plinth top (20 mm AFF) to 2 375 mm AFF. 100 × 50 sole on DPC, 100 × 50 head (closing plate, not tied to the roof), 100 × 100 full-height end post.</li>
-        <li>Kitchen window 900 × 1 100 mm, sill 1 200 mm (size and sill assumed; top is the confirmed 2 300 mm). The sill rail top is the confirmed 1 185 mm AFF.</li>
+        <li>Kitchen window 15: 900 × 1 100 mm as confirmed; sill ≈ 1 260 and head 2 360 as dimensioned on B-15 (not the earlier 1 200–2 300 / rail 1 185 rule).</li>
         <li>Window frames 70 mm deep, sitting in the 150 mm timber frame (~50 mm cob reveal + 40 mm timber each side). A lining or deeper frame may be needed because 70 mm does not span 250 mm (proposal CHECK).</li>
         <li>Insulation product CHECK (150 mm expanded cork is the preferred candidate). The 50 mm skin is the example maximum (CHECK with Matilde).</li>
         <li>Upper closing is the same 250 mm sandwich (unconfirmed / CHECK): US studs are 50 mm in the plane, 150 mm across the wall (~600 mm spacing, 50 studs). The two studs that left 23 mm bays at the E/W ring posts (88.3° / 271.7°) are omitted. 20 mm slip under the roof. Skins and cavity run past the head plate so it is not a cold band.</li>
         <li>FFL 180 mm above grade (provisional in the plan).</li>
-        <li>Interior ceiling: 150 mm insulation goes inside, under the green panel between the purlins (decided). 50 × 200 joists N–S, flush with the purlin soffit, at about 600 mm centres; T&amp;G timber running E–W underneath. House and utility interiors only, not the outdoor overhangs. T&amp;G soffits about 2 905 mm at the S inner face, 3 504 mm at the centre, 4 118 mm at the N wall CL. Main beams stay fully visible below. 20 mm slip at the upper closing, not fixed to the wall. At the four centre E–W brace heads the T&amp;G and membrane stop at a trimmed opening with a collar. Insulation product and joist hangers still CHECK.</li>
+        <li>Interior ceiling: 150 mm insulation goes inside, under the green panel between the purlins (decided). 50 × 200 joists N–S, flush with the purlin soffit, at about 600 mm centres; T&amp;G timber running E–W underneath. House interiors only — the utility has no separate ceiling (rev g item 7), not the outdoor overhangs. T&amp;G soffits about 2 905 mm at the S inner face, 3 504 mm at the centre, 4 118 mm at the N wall CL. Main beams stay fully visible below. 20 mm slip at the upper closing, not fixed to the wall. At the four centre E–W brace heads the T&amp;G and membrane stop at a trimmed opening with a collar. Insulation product and joist hangers still CHECK.</li>
         <li>Roof sandwich panels 60 mm thick (covering thickness still to pick with the supplier, typically 40–60 mm).</li>
-        <li>Level site; no solar array or flashings. North eave has no gutter yet.</li>
+        <li>Level site; no outdoor solar array or flashings. Indoor battery and inverter (sizes ASSUMED) sit on the utility west wall with 1 m clear in front. North eave has no gutter yet.</li>
         <li>South gutter (ASSUMED): 150 mm half-round, hung on rise-and-fall brackets from the flush south eave purlin (roof edge unchanged). Fall 3 mm/m to three 100 mm downpipes at the SW corner post (x = −5.00 m), the SE corner post (x = +5.00 m) and the SE-ext post (x = +9.00 m), all clear of windows and doors. A crown at x = 0 (solid south cob, between the living and bedroom windows) and a shorter crown at x = +7.00 m.</li>
         <li>Interior partitions 100 mm thick × 2 200 mm high; bed 450 mm; fixtures 400 mm.</li>
-        <li>Garden door leaves split 56 / 44, opening in; back-door leaf 70 % of the clear opening, opening out.</li>
-        <li>Windows are fixed glass (opening type not drawn).</li>
+        <li>Garden door leaves split 56 / 44, opening out (rev g item 3); back-door leaf 70 % of the clear opening, opening out. Utility door 800 mm clear / 880 mm opening, hinged east, opening out; leaf height 2 100 mm ASSUMED.</li>
+        <li>Typical windows are fixed glass (opening type not drawn). The high window has two top-hung outward sashes on a chain/rod winder (winder and rod ASSUMED).</li>
+        <li>Kitchen counter 600 mm deep (ASSUMED) × 900 mm high (confirmed), full length of the 2.59 m straight wall. Gas hob 600 × 520 mm ASSUMED, under window 15. Boiler up to 150 L, geyser and shelves: sizes ASSUMED. Curtain rail height 2 200 mm (partition height) ASSUMED.</li>
         <li>Furniture plan from Els’s sketch (drawings: not to scale).</li>
         <li>Sun: 40.17° N, 7.17° W, Europe/Lisbon clock time. Azimuth is from north, clockwise, with −Z as north.</li>
         <li>World axes: +X east, +Y up, −Z north (so a view looking north has east on the right).</li>
@@ -138,6 +141,6 @@
     }
   }
   </script>
-  <script type="module" src="js/app.js?v=1o"></script>
+  <script type="module" src="js/app.js?v=1p"></script>
 </body>
 </html>

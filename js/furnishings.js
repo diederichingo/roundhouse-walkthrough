@@ -1,5 +1,5 @@
 /**
- * Interior set dressing for the Option B walkthrough (v1o):
+ * Interior set dressing for the Option B walkthrough (v1p):
  * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch and coffee table only).
  * Pieces are typical sizes for a sense of space, not from the drawings.
  */
@@ -238,14 +238,14 @@ export function furnishInterior(ctx) {
   addHud('1.40 x 2.00 m', bedCx, BED_H + 0.18, bedCz, ['heights', 'bedroom']);
 
   // ——— Kitchen figure: woman ~60, 1.80 m, slim, white hair, red dress ———
-  // West face of the counter, south of the stove, facing the counter (east), near the kitchen window.
-  const kX = 0.124, kZ = -3.70;
+  // At the hob under window 15, facing north toward the straight kitchen wall.
+  const kX = -0.55, kZ = -3.75;
   const kFig = addWoman(houseGroup, mats, {
     height: 1.80, skin: mats.skinA, hair: mats.hairWhite, cloth: mats.red, shoe: mats.shoeDark,
     slim: true, age: 60, hairStyle: 'bob'
   });
   kFig.position.set(kX, 0, kZ);
-  kFig.rotation.y = -Math.PI / 2; // face +X (east) toward the counter
+  kFig.rotation.y = Math.PI; // face −Z (north) toward the hob and window 15
   kFig.userData.role = 'kitchen-person';
   addHud('1.80 m', kX - 0.15, 1.86, kZ + 0.15, ['heights', 'kitchen-person']);
 
@@ -287,9 +287,17 @@ export function furnishInterior(ctx) {
 }
 
 export const VIEW_CAMS = {
+  kitchen: {
+    label: 'Kitchen (straight wall and high window)',
+    cam: { x: 1.45, y: 1.55, z: -2.35, tx: -0.25, ty: 2.45, tz: -4.75 }
+  },
   'kitchen-person': {
     label: 'Kitchen with person',
-    cam: { x: -1.85, y: 2.05, z: -1.15, tx: 0.45, ty: 1.55, tz: -4.15 }
+    cam: { x: 1.45, y: 1.55, z: -2.35, tx: -0.25, ty: 2.45, tz: -4.75 }
+  },
+  'utility-door': {
+    label: 'Utility door',
+    cam: { x: 5.15, y: 1.60, z: -0.85, tx: 6.51, ty: 1.15, tz: 0.60 }
   },
   'bathroom-person': {
     label: 'Bathroom with person',
@@ -304,8 +312,8 @@ export const VIEW_CAMS = {
     cam: { x: -0.15, y: 1.70, z: 1.40, tx: 1.55, ty: 0.40, tz: 1.60 }
   },
   'window-reveal': {
-    label: 'Window reveal',
-    cam: { x: 0.52, y: 1.68, z: -4.58, tx: 0.92, ty: 1.62, tz: -4.98 }
+    label: 'Window reveal (kitchen 15)',
+    cam: { x: -0.35, y: 1.70, z: -4.15, tx: -0.55, ty: 1.80, tz: -5.05 }
   },
   'post-coverage': {
     label: 'Post coverage',
@@ -315,25 +323,25 @@ export const VIEW_CAMS = {
     label: 'Ceiling',
     cam: { x: 1.20, y: 2.30, z: 3.40, tx: 0.00, ty: 2.92, tz: 4.50 }
   },
-  // Standing 1.65 m AFF, 1 m back from the glass, looking out through each south window.
+  // Standing 1.65 m AFF, 1 m back from the glass, looking out. Numbered as on B-06 (rev g).
   'south-window-1': {
     label: 'South window 1 (from inside)',
-    note: 'Living, SW (bay 24)',
-    cam: { x: -2.283, y: 1.65, z: 3.285, tx: -4.566, ty: 1.80, tz: 6.569 }
+    note: 'Bedroom, SSE, east of the S post (bay 1)',
+    cam: { x: 0.570, y: 1.65, z: 3.959, tx: 1.141, ty: 1.80, tz: 7.919 }
   },
   'south-window-2': {
     label: 'South window 2 (from inside)',
+    note: 'Bedroom, SE (bay 2)',
+    cam: { x: 1.655, y: 1.65, z: 3.641, tx: 3.310, ty: 1.80, tz: 7.283 }
+  },
+  'south-window-24': {
+    label: 'South window 24 (living SW, from inside)',
+    note: 'Living, SW (bay 24)',
+    cam: { x: -2.282, y: 1.65, z: 3.285, tx: -4.565, ty: 1.80, tz: 6.570 }
+  },
+  'south-window-25': {
+    label: 'South window 25 (living SSW, from inside)',
     note: 'Living, SSW, west of the S post (bay 25)',
     cam: { x: -1.301, y: 1.65, z: 3.782, tx: -2.603, ty: 1.80, tz: 7.565 }
-  },
-  'south-window-3': {
-    label: 'South window 3 (from inside)',
-    note: 'Bedroom, SSE, east of the S post (bay 2)',
-    cam: { x: 0.933, y: 1.65, z: 3.890, tx: 1.867, ty: 1.80, tz: 7.779 }
-  },
-  'south-window-4': {
-    label: 'South window 4 (from inside)',
-    note: 'Bedroom / bathroom, SE (bay 3)',
-    cam: { x: 1.957, y: 1.65, z: 3.488, tx: 3.915, ty: 1.80, tz: 6.977 }
   }
 };

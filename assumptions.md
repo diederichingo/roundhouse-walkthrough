@@ -169,3 +169,36 @@ South gutter only, all figures **ASSUMED**:
 - Saved cameras at the four south-facing big windows, standing **1.65 m** AFF and **1 m** back from the glass, looking out: South window 1 (living, SW, bay 24), South window 2 (living, SSW, bay 25), South window 3 (bedroom, SSE, bay 2), South window 4 (bedroom / bathroom, SE, bay 3). The two small bathroom windows (bays 4–5) face more south-east and were not given cameras.
 
 Plan rev 2026-11-26g (utility door, kitchen wall, garden doors, etc.) is not in this version.
+
+
+## v1p — plan rev 2026-11-26g
+
+Walkthrough updated to the B-01–B-15 and project-plan revision of 26 November 2026 (rev g). The roof plan and the south gutter are unchanged (overhangs already 1.2 m N/S, 1.0 m W, 1.5 m E of the x = +9 000 beam). Downpipes at x = −5.00 / +5.00 / +9.00 were re-checked against the renumbered south openings; they still clear the glazing and the garden doors (the SW pipe is at the south eave, not beside the west garden doors).
+
+### Implemented from the plan (items 1–12)
+
+1. Utility door on the north wall of the utility (drawing y = −600, world z = +0.60): 800 mm clear / 880 mm opening, hinged on the east jamb, opening out (north, into the 806 mm gap). Leaf height **2 100 mm ASSUMED**. Drawn clearance to the back-door swing is 218.9 mm ≈ 219 mm. Indoor battery and inverter (sizes **ASSUMED**: inverter 500 × 240 × 700, battery 700 × 300 × 800) sit on the west wall with 1 m clear in front.
+2. Straight cob kitchen wall, 1 100 mm high, front face on the 4.70 m chord, 2.59 m long, centred on the N post, with a 20 mm compressible strip at the post. Plinth rim widened inside to 500 mm over 1.95 m, inner face on the same chord. Counter 600 mm deep (**ASSUMED**) × 900 mm high (confirmed). Gas hob 600 × 520 mm (**ASSUMED**) under window 15.
+3. Garden doors open outward.
+4. Bay order from the S post: big window 1, big window 2, 300 mm cob pier 3, small windows 4 and 5. Bathroom curtain on a rail from the partition end to pier 3 (rail height 2 200 mm **ASSUMED**, cloth hangs to 200 mm AFF **ASSUMED**). The line is a diagonal to the pier, not a continuation of the partition to the ring (that would meet window 2) — CHECK with Els.
+5. Kitchen window 15 west of the N post, 180–192.7°, 900 × 1 100. B-15 dimensions the sill at ≈ 1 260 (160 mm above the 1 100 shelf), so the head is 2 360. That is 60 mm above the previous confirmed 2 300 window-top rule. Implemented as drawn on B-15. Leftover plan wording still says window 1 200–2 300 / rail 1 185.
+6. High window 970 × 1 190, sill 2 600, head 3 790, two top-hung outward sashes. Rod winder **ASSUMED** (16 mm). 50 mm west trimmer. US studs omitted in the opening. HW lining vs the N knee brace is a CHECK (≥ 50 mm).
+7. Utility walls close up to the main roof with a 20 mm slip (under the covering on N/S/W, under the x = +9 beam on the east). No separate utility roof or ceiling; house T&G, joists and insulation stay.
+8. East wall is the installation wall: 150 × 50 studs at most 450 mm, noggings at 550 / 1 000 / 1 500 / 2 000, 22 mm ply inside. A 50 mm cob/lime weather skin is kept on the outside (the wall is an exterior face). The plan says “a proper timber wall, not cob” — read here as the structure; the outside skin is the same as the other exterior walls. Hung boiler up to 150 L (size **ASSUMED** 500 × 500 × 1 200) and a gas geyser at the south end (size **ASSUMED** 350 × 250 × 700) with shelves under it. Plan / B-15 place the geyser about 2.4 m from the battery and inverter; B-13 notes ≈ 2.6 m. Kit is placed as on B-15 / the plan.
+9. Ledge: 150 mm board, 28 mm thick (within the 27–30 mm range), top at 1 200, on the bed-side face of the curved inner wall, about 3.83 m, in mitred lengths. Working assumption / CHECK with Els (which wall/face).
+10. Text clean-up only (Option A leftover wording in the plan). Not a 3D change.
+11. Low Ø100 sleeved closable inlets (V1–V4) in bays 13, 16, 6 and 7 at 450 mm AFF; shower fan / lined vent F1 high in bay 8 at 2 700. External cowl on F1 is **ASSUMED** 160 mm square.
+12. Central beam: C24-graded pine at the same section is fine; no round or ungraded poles. Label only; no geometry change.
+
+### CHECKs to confirm (not silent guesses)
+
+- Window 1 west sash at 90° inward vs the S inward knee brace (plan: about 65 mm) — CHECK with Els and Joshua.
+- High-window east lining vs the N inward knee brace (plan: ≥ 50 mm).
+- Bed-area closet vs window 1 (the sketched closet stays by the bed / partition, not in front of the window).
+- Curtain line (partition end to pier 3).
+- Kitchen window 15 head 2 360 vs the 2 300 rule (implemented as B-15).
+- Geyser-to-solar distance 2.4 m (plan / B-15) vs 2.6 m (B-13).
+- Ledge wall/face with Els.
+- Installation-wall exterior finish (cob skin vs “not cob”).
+
+Saved cameras: kitchen (straight wall and high window), utility door, south windows 1 and 2 (new numbering, east of the S post), and south windows 24 and 25 (living SW / SSW gutter views). Living room remains couch and coffee table only.
