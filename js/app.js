@@ -1,13 +1,13 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1w. Plan rev 2026-11-26j2. Look signs verified vs camera forward; cache bust.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1x. Plan rev 2026-11-26j2. Garden double doors open outward.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1w';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1x';
 
-const APP_VERSION = '1w';
+const APP_VERSION = '1x';
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
 
@@ -1102,6 +1102,10 @@ function buildModel() {
       const d2 = makeDoorLeaf(w2, leafH, frameD, 'out', -1);
       d1.pivot.position.set(-clearW / 2, 0, 0);
       d2.pivot.position.set( clearW / 2, 0, 0);
+      // makeDoorLeaf('out') rotates toward local −Z in this frame (local +Z is
+      // outward). Flip the signs so both leaves swing toward +Z, i.e. outside.
+      d1.sign = -d1.dir;
+      d2.sign = -d2.dir;
       group.add(d1.pivot, d2.pivot);
       doors.push({
         name: 'Garden doors', kind, group, leaves: [d1, d2], open: false,
@@ -2927,36 +2931,44 @@ function buildModel() {
       bathToInner = distToArc(bp.x, bp.z) - CURVE_T / 2 - 0.200;
     }
     kitchenToInner = distToArc((c.x0 + c.x1) / 2, (c.z0 + c.z1) / 2) - CURVE_T / 2;
-    // Garden doors open outward (west, item 3). Larger leaf ~56 % of 1.91 m, south jamb at the W post.
+    // Garden double doors (the only pair): both leaves swing 90° outward (local +Z).
     const garden = doors.find((d) => d.kind === 'gardendoor');
     if (garden) {
-      const leaf = Math.max(...garden.leaves.map((l) => l.w));
-      // Sample the open-leaf arc from the south jamb (W post) and the north jamb.
-      let min = 1e9;
-      const jambs = [
-        { x: garden.p.x + (-garden.clearW / 2) * Math.cos(Math.atan2(garden.nx, garden.nz)),
-          z: garden.p.y + (-garden.clearW / 2) * Math.sin(Math.atan2(garden.nx, garden.nz)) },
-        { x: garden.p.x + ( garden.clearW / 2) * Math.cos(Math.atan2(garden.nx, garden.nz)),
-          z: garden.p.y + ( garden.clearW / 2) * Math.sin(Math.atan2(garden.nx, garden.nz)) }
-      ];
-      // Simpler: W post at (−5, 0) and the north jamb at theta 245.93, R.
-      const jS = { x: -5, z: 0 };
-      const jTh = 245.931074 * DEG;
-      const jN = { x: 5 * Math.sin(jTh), z: 5 * Math.cos(jTh) };
-      for (const j of [jS, jN]) {
-        for (let k = 0; k <= 8; k++) {
-          const ang = (k / 8) * Math.PI / 2;
-          // inward is +X (east) from the west wall
-          const x = j.x + leaf * Math.sin(ang);
-          const z = j.z + (j === jS ? -leaf * (1 - Math.cos(ang)) * 0 : 0);
-          // From south jamb, leaf swings north-east into the opening; from north jamb, south-east.
-          const x2 = j.x + leaf * Math.sin(ang);
-          const z2 = j === jS ? j.z - leaf * (1 - Math.cos(ang)) : j.z + leaf * (1 - Math.cos(ang));
-          const d = distToArc(x2, z2) - CURVE_T / 2;
-          if (d < min) min = d;
-        }
+      const rotY = Math.atan2(garden.nx, garden.nz);
+      const cy = Math.cos(rotY), sy = Math.sin(rotY);
+      const gx = garden.p.x, gz = garden.p.y;
+      const halfD = 0.035;
+      function gardenLeafWorld(leaf, theta, u, v) {
+        const x = leaf.dir * leaf.w * u;
+        const z = halfD * v;
+        const c = Math.cos(theta), s = Math.sin(theta);
+        const lx = x * c + z * s + leaf.pivot.position.x;
+        const lz = -x * s + z * c;
+        return { x: gx + lx * cy + lz * sy, z: gz + lz * cy - lx * sy };
       }
-      doorSwingGap = { min, leaf, note: 'garden doors open outward (item 3); back door opens out, away from the inner wall' };
+      let minInward = 1e9;
+      const samples = [];
+      garden.leaves.forEach((leaf) => {
+        const openAng = (90 * Math.PI / 180) * leaf.sign;
+        for (let k = 0; k <= 8; k++) {
+          const ang = openAng * (k / 8);
+          for (const u of [0, 1]) for (const v of [-1, 1]) {
+            const wpt = gardenLeafWorld(leaf, ang, u, v);
+            const d = distToArc(wpt.x, wpt.z) - CURVE_T / 2;
+            if (d < minInward) minInward = d;
+            if (k === 8 && u === 1 && v === 0) samples.push(wpt);
+          }
+        }
+      });
+      const tip0 = gardenLeafWorld(garden.leaves[0], (90 * Math.PI / 180) * garden.leaves[0].sign, 1, 0);
+      const tip1 = gardenLeafWorld(garden.leaves[1], (90 * Math.PI / 180) * garden.leaves[1].sign, 1, 0);
+      const rhoTips = [Math.hypot(tip0.x, tip0.z), Math.hypot(tip1.x, tip1.z)];
+      doorSwingGap = {
+        min: minInward,
+        leaf: Math.max(...garden.leaves.map((l) => l.w)),
+        openTipsRho: rhoTips,
+        note: 'Garden double doors open 90° outward over the notched plinth and the 180 mm step to grade. Inner-wall figure is clearance from the outward swing (large). Back door and utility are unchanged (already modelled as outward; only this pair was swinging in).'
+      };
     }
     // Beams and braces above the inner-wall head (2 375 AFF).
     let iwBeam = { minSoffit: null, minGapAboveHead: null, atY: null };
@@ -4817,6 +4829,32 @@ window.__roundhouse = {
     applySun();
   },
   openAllDoors() { doors.forEach((d) => { if (!d.open) toggleDoor(d); }); },
+  snapDoors(open = true, kind = null) {
+    doors.forEach((d) => {
+      if (kind && d.kind !== kind) return;
+      d.open = !!open;
+      const target = d.open ? (90 * DEG) : 0;
+      d.leaves.forEach((leaf) => {
+        leaf.target = target;
+        leaf.angle = target * (leaf.sign || 1);
+        leaf.pivot.rotation.y = leaf.angle;
+      });
+    });
+  },
+  getDoors: () => doors.map((d) => ({
+    name: d.name, kind: d.kind, open: d.open, inward: !!d.inward, clearW: d.clearW,
+    leaves: d.leaves.map((leaf) => {
+      const corners = [];
+      const halfD = (0.070 / 2);
+      const pts = [[0, 0], [leaf.dir * leaf.w, 0], [leaf.dir * leaf.w, halfD], [leaf.dir * leaf.w, -halfD], [0, halfD], [0, -halfD]];
+      pts.forEach(([lx, lz]) => {
+        const v = new THREE.Vector3(lx, 0.05, lz);
+        leaf.pivot.localToWorld(v);
+        corners.push({ x: v.x, y: v.y, z: v.z, rho: Math.hypot(v.x, v.z) });
+      });
+      return { w: leaf.w, sign: leaf.sign, dir: leaf.dir, angle: leaf.angle, corners };
+    })
+  })),
   getPlayer: () => ({x: player.x, y: player.y, z: player.z, yaw, pitch, yawTarget, pitchTarget, vx: moveVX, vz: moveVZ}),
   setPlayer(x,z,y=null, yawi=null, pitchi=null) {
     player.set(x, y != null ? y : FFL_Y, z);

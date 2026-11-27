@@ -348,3 +348,14 @@ Cache busting:
 - A `version.json` file holds the live version. An inline script fetches it with `cache: 'no-store'` and, if it does not match the page's baked-in version, reloads with `?v=<live>&_rh=<timestamp>`.
 - Asset URLs keep `?v=1w`. Any service worker is unregistered on load.
 - A clear terracotta **v1w** badge sits in the header next to the title so the running version is obvious on a phone.
+
+
+## v1x — garden double doors open outward
+
+The only double door is the **garden pair** (west wall, segment 20, W post as the south jamb, clear 1 910 mm, two leaves 56 % / 44 %). They were labelled "out" but the leaves actually swung inward (local −Z). Both leaves now swing 90° to the outside (local +Z).
+
+Hinges stay on the jambs. Walk collision already lets you through the ring opening when the doors are open; leaf meshes are not colliders (same as before).
+
+The back door (single leaf + south side light) and the utility door are not double doors and were left as they are.
+
+ASSUMED: 90° hold-open; leaves are cut at FFL / the threshold, so they swing clear of the notched plinth (plinth in the door bay is 40 mm below FFL) and open over the 180 mm drop to grade (180 mm of air under the open leaf outside). No west gutter or downpipe. No plan swing-arc mesh is drawn.
