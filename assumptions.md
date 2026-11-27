@@ -269,3 +269,17 @@ Drawings: B-01–B-15 rev 2026-11-26j (authoritative), plus the rev j section of
 - Ledge wall/face (Els).
 - Partition skins have no footing (Tom).
 - Insulation product and joist hangers.
+
+
+## v1s — calmer walk and orbit controls
+
+Walk look and move felt twitchy (instant yaw/pitch at 0.0025 rad/px mouse and 0.005 rad/px touch, instant start/stop). v1s lowers the defaults, adds frame-rate-independent damping, and puts a Look sensitivity slider in the top header (after the tool buttons; wraps under them on a phone).
+
+- Mouse look baseline: 0.00115 rad per CSS pixel at 1× (was 0.0025).
+- Touch look baseline: 0.00140 rad per CSS pixel at 1× (was 0.005). Scaling is CSS-pixel only (not multiplied by devicePixelRatio).
+- Slider: 0.2×–2.0×, default 1.0× of the new baseline, persisted as `localStorage['roundhouse.lookSensitivity']`.
+- Look damping time constant: 0.15 s (lerp yaw/pitch toward a target each frame). Pitch is clamped to ±80°.
+- Move damping time constant: 0.14 s (acceleration / deceleration of walk velocity, including the on-screen joystick).
+- Orbit: `enableDamping` stays on, `dampingFactor` 0.10 (was 0.08), `rotateSpeed` 0.50 (was 1.0).
+- Touch look-drag: ignore the first pointermove after pointerdown, clamp per-event deltas (48 CSS px touch / 64 px mouse), handle pointercancel, capture the pointer.
+- Teleports (`setMode`, `setWalkView`, `setPlayer`) snap look and zero walk velocity so screenshot helpers stay instant.

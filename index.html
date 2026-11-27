@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#1b1916">
   <title>Els’s roundhouse — Option B walkthrough</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=1s">
 </head>
 <body>
   <div id="loading">Loading the roundhouse…</div>
@@ -15,7 +15,7 @@
   <div id="ui">
     <header class="top">
       <h1>Els’s roundhouse, Penamacor
-        <span>Option B walkthrough · v1r · not for construction</span>
+        <span>Option B walkthrough · v1s · not for construction</span>
       </h1>
       <div class="modes" role="group" aria-label="View mode">
         <button id="btnOrbit" aria-pressed="true">Orbit</button>
@@ -28,6 +28,11 @@
         <button class="tool" id="btnHeights" aria-pressed="false">Heights</button>
         <button class="tool" id="btnMeasure" aria-pressed="false">Tape</button>
       </div>
+      <label class="look-sens" for="lookSensSlider">
+        Look sensitivity
+        <input type="range" id="lookSensSlider" min="0.2" max="2" step="0.05" value="1" aria-label="Look sensitivity">
+        <span id="lookSensVal">1.0×</span>
+      </label>
     </header>
     <button id="togglePanel" aria-label="Toggle panel">i</button>
     <div id="structLegend" hidden>
@@ -145,6 +150,6 @@
     }
   }
   </script>
-  <script type="module" src="js/app.js?v=1r"></script>
+  <script type="module" src="js/app.js?v=1s"></script>
 </body>
 </html>

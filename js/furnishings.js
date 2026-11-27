@@ -1,5 +1,5 @@
 /**
- * Interior set dressing for the Option B walkthrough (v1r):
+ * Interior set dressing for the Option B walkthrough (v1s):
  * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch and coffee table only).
  * Pieces are typical sizes for a sense of space, not from the drawings.
  */

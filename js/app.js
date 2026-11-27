@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1r. Plan rev 2026-11-26j. Walls are a sandwich, not solid cob.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1s. Plan rev 2026-11-26j. Calmer look/move controls.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1r';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1s';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -22,6 +22,20 @@ const LON = -7.17;
 const EYE = 1.70;
 const RADIUS = 0.22;
 const WALK_SPEED = 2.4;
+// Look / move feel (v1s). Slider is a multiplier on these calmer baselines (was 0.0025 mouse / 0.005 touch).
+const LOOK_SENS_MOUSE = 0.00115; // rad per CSS pixel at 1×, pointer-lock mouse
+const LOOK_SENS_TOUCH = 0.00140; // rad per CSS pixel at 1×, walk look-drag
+const LOOK_SENS_MIN = 0.2;
+const LOOK_SENS_MAX = 2.0;
+const LOOK_SENS_DEFAULT = 1.0;   // 1× = the new calmer default
+const LOOK_TAU = 0.15;           // yaw/pitch time constant, seconds
+const MOVE_TAU = 0.14;           // walk accel/decel time constant, seconds
+const PITCH_LIMIT = 80 * Math.PI / 180;
+const LOOK_DELTA_CLAMP_TOUCH = 48; // CSS px per event
+const LOOK_DELTA_CLAMP_MOUSE = 64;
+const LOOK_SENS_KEY = 'roundhouse.lookSensitivity';
+const ORBIT_ROTATE_SPEED = 0.50; // OrbitControls default is 1.0
+const ORBIT_DAMPING = 0.10;
 
 let G; // geometry.json
 let scene, camera, renderer, orbit, sunLight, hemi, fill, sunHelper;
@@ -41,6 +55,10 @@ const WALK_START = { x: -2.20, z: -0.35, yaw: 0.55, pitch: -0.08 };
 const START_CAM = { x: 15.4, y: 7.6, z: 16.6, tx: 3.6, ty: 1.35, tz: 0.8 };
 let yaw = WALK_START.yaw;
 let pitch = WALK_START.pitch;
+let yawTarget = yaw;
+let pitchTarget = pitch;
+let moveVX = 0, moveVZ = 0;
+let lookSens = LOOK_SENS_DEFAULT;
 let player = new THREE.Vector3(WALK_START.x, EYE, WALK_START.z);
 let fly = null; // {fromPos,toPos,fromTarget,toTarget,t,dur}
 let activeClash = null;
@@ -3979,17 +3997,15 @@ function setWalkView(name) {
   setMode('walk');
   if (name === 'kitchen') {
     player.set(0.15, EYE, -2.45);
-    yaw = 0.16;
-    pitch = -0.12;
+    snapLook(0.16, -0.12);
   } else if (name === 'bathroom') {
     player.set(-1.55, EYE, -0.85);
-    yaw = 2.15;
-    pitch = -0.05;
+    snapLook(2.15, -0.05);
   } else {
     player.set(WALK_START.x, EYE, WALK_START.z);
-    yaw = WALK_START.yaw;
-    pitch = WALK_START.pitch;
+    snapLook(WALK_START.yaw, WALK_START.pitch);
   }
+  moveVX = moveVZ = 0;
   collide(player);
   player.y = EYE;
 }
@@ -4050,8 +4066,8 @@ function setMode(next, opts = {}) {
   if (mode === 'walk') {
     fly = null;
     player.set(WALK_START.x, EYE, WALK_START.z);
-    yaw = WALK_START.yaw;
-    pitch = WALK_START.pitch;
+    snapLook(WALK_START.yaw, WALK_START.pitch);
+    moveVX = moveVZ = 0;
     collide(player);
     player.y = EYE;
     if (pointerLocked && document.exitPointerLock) document.exitPointerLock();
@@ -4074,7 +4090,71 @@ function isTouch() {
   return window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 }
 
+function wrapAngle(a) {
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+function damp(current, target, dt, tau) {
+  const k = 1 - Math.exp(-dt / Math.max(1e-4, tau));
+  return current + (target - current) * k;
+}
+function dampAngle(current, target, dt, tau) {
+  return current + wrapAngle(target - current) * (1 - Math.exp(-dt / Math.max(1e-4, tau)));
+}
+function clampPitch(p) {
+  return Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, p));
+}
+function snapLook(y, p) {
+  yawTarget = wrapAngle(y);
+  pitchTarget = clampPitch(p);
+  yaw = yawTarget;
+  pitch = pitchTarget;
+}
+function clampDelta(dx, dy, maxPx) {
+  const m = Math.hypot(dx, dy);
+  if (m > maxPx && m > 0) {
+    const s = maxPx / m;
+    return { dx: dx * s, dy: dy * s };
+  }
+  return { dx, dy };
+}
+function applyLookDelta(dx, dy, kind) {
+  const scale = (kind === 'touch' ? LOOK_SENS_TOUCH : LOOK_SENS_MOUSE) * lookSens;
+  yawTarget = wrapAngle(yawTarget - dx * scale);
+  pitchTarget = clampPitch(pitchTarget - dy * scale);
+}
+function loadLookSens() {
+  try {
+    const raw = localStorage.getItem(LOOK_SENS_KEY);
+    const n = raw == null ? LOOK_SENS_DEFAULT : parseFloat(raw);
+    if (Number.isFinite(n)) return Math.max(LOOK_SENS_MIN, Math.min(LOOK_SENS_MAX, n));
+  } catch (err) { /* private mode */ }
+  return LOOK_SENS_DEFAULT;
+}
+function persistLookSens(v) {
+  try { localStorage.setItem(LOOK_SENS_KEY, String(v)); } catch (err) { /* ignore */ }
+}
+function setLookSensitivity(v, { persist = true, syncUi = true } = {}) {
+  const n = Math.max(LOOK_SENS_MIN, Math.min(LOOK_SENS_MAX, Number(v)));
+  lookSens = Number.isFinite(n) ? n : LOOK_SENS_DEFAULT;
+  if (persist) persistLookSens(lookSens);
+  if (syncUi) {
+    const sl = document.getElementById('lookSensSlider');
+    const lab = document.getElementById('lookSensVal');
+    if (sl) sl.value = String(lookSens);
+    if (lab) {
+      const r = Math.round(lookSens * 20) / 20;
+      lab.textContent = r.toFixed((r * 10) % 1 === 0 ? 1 : 2) + '×';
+    }
+  }
+  return lookSens;
+}
+
 function updateWalk(dt) {
+  yaw = dampAngle(yaw, yawTarget, dt, LOOK_TAU);
+  pitch = damp(pitch, pitchTarget, dt, LOOK_TAU);
+
   let mx = 0, mz = 0;
   if (keys['KeyW'] || keys['ArrowUp']) mz += 1;
   if (keys['KeyS'] || keys['ArrowDown']) mz -= 1;
@@ -4083,14 +4163,22 @@ function updateWalk(dt) {
   if (joy.active) { mx += joy.x; mz += -joy.y; } // joystick y up is forward
   const len = Math.hypot(mx, mz);
   if (len > 1) { mx /= len; mz /= len; }
-  if (len > 0.05) {
-    const speed = WALK_SPEED * (keys['ShiftLeft'] ? 1.6 : 1);
-    // yaw 0 looks north (−Z). Forward is (sin yaw, −cos yaw) in x-z
-    const fx = Math.sin(yaw), fz = -Math.cos(yaw);
-    const rx = Math.sin(yaw + Math.PI/2), rz = -Math.cos(yaw + Math.PI/2);
-    player.x += (fx * mz + rx * mx) * speed * dt;
-    player.z += (fz * mz + rz * mx) * speed * dt;
+  const speed = WALK_SPEED * (keys['ShiftLeft'] ? 1.6 : 1);
+  // yaw 0 looks north (−Z). Forward is (sin yaw, −cos yaw) in x-z
+  const fx = Math.sin(yaw), fz = -Math.cos(yaw);
+  const rx = Math.sin(yaw + Math.PI / 2), rz = -Math.cos(yaw + Math.PI / 2);
+  const desireX = (len > 0.04) ? (fx * mz + rx * mx) * speed : 0;
+  const desireZ = (len > 0.04) ? (fz * mz + rz * mx) * speed : 0;
+  const k = 1 - Math.exp(-dt / MOVE_TAU);
+  moveVX += (desireX - moveVX) * k;
+  moveVZ += (desireZ - moveVZ) * k;
+  if (Math.hypot(moveVX, moveVZ) > 0.0008) {
+    player.x += moveVX * dt;
+    player.z += moveVZ * dt;
     collide(player);
+  } else {
+    moveVX = 0;
+    moveVZ = 0;
   }
   player.y = EYE;
   camera.position.copy(player);
@@ -4239,7 +4327,8 @@ async function init() {
   orbit = new OrbitControls(camera, canvas);
   orbit.target.set(START_CAM.tx, START_CAM.ty, START_CAM.tz);
   orbit.enableDamping = true;
-  orbit.dampingFactor = 0.08;
+  orbit.dampingFactor = ORBIT_DAMPING;
+  orbit.rotateSpeed = ORBIT_ROTATE_SPEED;
   orbit.maxPolarAngle = Math.PI * 0.85; // allow looking up at the ceiling and brace collars
   orbit.minDistance = 2;
   orbit.maxDistance = 36;
@@ -4253,6 +4342,15 @@ async function init() {
 }
 
 function bindUI() {
+  setLookSensitivity(loadLookSens(), { persist: false, syncUi: true });
+  const lookSlider = document.getElementById('lookSensSlider');
+  if (lookSlider) {
+    lookSlider.min = String(LOOK_SENS_MIN);
+    lookSlider.max = String(LOOK_SENS_MAX);
+    lookSlider.step = '0.05';
+    lookSlider.addEventListener('input', () => setLookSensitivity(lookSlider.value));
+  }
+
   document.getElementById('btnOrbit').addEventListener('click', () => setMode('orbit'));
   document.getElementById('btnWalk').addEventListener('click', () => setMode('walk'));
   document.getElementById('btnClash').addEventListener('click', () => {
@@ -4328,48 +4426,63 @@ function bindUI() {
   });
   window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
-  // Pointer: click doors / measure; walk look; orbit is handled by OrbitControls
+  // Pointer: click doors / measure; walk look; orbit is handled by OrbitControls.
+  // Look-drag (touch and non-locked pointer): ignore the first delta after pointerdown,
+  // clamp per-event spikes, and scale in CSS pixels (devicePixelRatio-independent).
   let downX = 0, downY = 0, downT = 0, looking = false, lastX = 0, lastY = 0;
+  let lookPtr = null, lookIgnoreNext = false;
+  function endLook() {
+    looking = false;
+    lookPtr = null;
+    lookIgnoreNext = false;
+  }
   canvas.addEventListener('pointerdown', (e) => {
     downX = lastX = e.clientX; downY = lastY = e.clientY; downT = performance.now();
-    if (mode === 'walk' && !isTouch()) {
-      // request pointer lock on a non-drag click later
-    }
-    if (mode === 'walk' && isTouch() && !inJoy(e)) {
+    if (mode === 'walk' && !pointerLocked && !inJoy(e)) {
       looking = true;
-      canvas.setPointerCapture(e.pointerId);
+      lookPtr = e.pointerId;
+      lookIgnoreNext = true;
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* already captured */ }
     }
   });
   canvas.addEventListener('pointermove', (e) => {
     if (mode === 'walk' && pointerLocked) return; // movement handled by mousemove
-    if (looking) {
-      const dx = e.clientX - lastX, dy = e.clientY - lastY;
-      lastX = e.clientX; lastY = e.clientY;
-      yaw -= dx * 0.005;
-      pitch -= dy * 0.005;
-      pitch = Math.max(-1.2, Math.min(1.2, pitch));
+    if (!looking || (lookPtr != null && e.pointerId !== lookPtr)) return;
+    if (lookIgnoreNext) {
+      lookIgnoreNext = false;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      return;
     }
+    let dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    const kind = (e.pointerType === 'mouse') ? 'mouse' : 'touch';
+    ({ dx, dy } = clampDelta(dx, dy, kind === 'touch' ? LOOK_DELTA_CLAMP_TOUCH : LOOK_DELTA_CLAMP_MOUSE));
+    applyLookDelta(dx, dy, kind);
   });
-  canvas.addEventListener('pointerup', (e) => {
+  function onLookUp(e) {
     const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
-    const dt = performance.now() - downT;
-    looking = false;
-    if (moved < 8 && dt < 600) {
+    const elapsed = performance.now() - downT;
+    endLook();
+    if (moved < 8 && elapsed < 600) {
       if (measureOn) { pickMeasure(e); return; }
       if (pickDoor(e)) return;
       if (mode === 'walk' && !isTouch() && !pointerLocked) {
         canvas.requestPointerLock && canvas.requestPointerLock();
       }
     }
-  });
+  }
+  canvas.addEventListener('pointerup', onLookUp);
+  canvas.addEventListener('pointercancel', endLook);
   document.addEventListener('pointerlockchange', () => {
     pointerLocked = document.pointerLockElement === canvas;
+    if (pointerLocked) endLook();
   });
   document.addEventListener('mousemove', (e) => {
     if (!pointerLocked || mode !== 'walk') return;
-    yaw -= e.movementX * 0.0025;
-    pitch -= e.movementY * 0.0025;
-    pitch = Math.max(-1.2, Math.min(1.2, pitch));
+    let dx = e.movementX, dy = e.movementY;
+    ({ dx, dy } = clampDelta(dx, dy, LOOK_DELTA_CLAMP_MOUSE));
+    applyLookDelta(dx, dy, 'mouse');
   });
 
   // Joystick
@@ -4400,7 +4513,7 @@ function bindUI() {
   joyEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     joyPtr = e.pointerId;
-    joyEl.setPointerCapture(e.pointerId);
+    try { joyEl.setPointerCapture(e.pointerId); } catch (err) { /* synthetic / already captured */ }
     setKnob(e.clientX, e.clientY);
   });
   joyEl.addEventListener('pointermove', (e) => {
@@ -4451,13 +4564,30 @@ window.__roundhouse = {
     applySun();
   },
   openAllDoors() { doors.forEach((d) => { if (!d.open) toggleDoor(d); }); },
-  getPlayer: () => ({x: player.x, y: player.y, z: player.z, yaw, pitch}),
+  getPlayer: () => ({x: player.x, y: player.y, z: player.z, yaw, pitch, yawTarget, pitchTarget, vx: moveVX, vz: moveVZ}),
   setPlayer(x,z,y=EYE, yawi=null, pitchi=null) {
     player.set(x,y,z);
-    if (yawi != null) yaw = yawi;
-    if (pitchi != null) pitch = pitchi;
+    if (yawi != null || pitchi != null) snapLook(yawi != null ? yawi : yaw, pitchi != null ? pitchi : pitch);
+    moveVX = moveVZ = 0;
     collide(player);
     player.y = y;
+  },
+  getLookSettings: () => ({
+    sensitivity: lookSens,
+    lookSensMouse: LOOK_SENS_MOUSE,
+    lookSensTouch: LOOK_SENS_TOUCH,
+    lookTau: LOOK_TAU,
+    moveTau: MOVE_TAU,
+    pitchLimitDeg: 80,
+    orbitRotateSpeed: (orbit && orbit.rotateSpeed) || ORBIT_ROTATE_SPEED,
+    orbitDamping: (orbit && orbit.dampingFactor) || ORBIT_DAMPING,
+    orbitDampingEnabled: !!(orbit && orbit.enableDamping)
+  }),
+  setLookSensitivity,
+  step(dt) {
+    const d = Math.max(0, Math.min(0.05, Number(dt) || 0));
+    if (d && mode === 'walk') updateWalk(d);
+    else if (d && mode === 'orbit' && orbit) orbit.update();
   },
   setRoofOff,
   setStructureOnly,
