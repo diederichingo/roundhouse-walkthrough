@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1u. Plan rev 2026-11-26j2. Stand/Sit walk and couch view.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1v. Plan rev 2026-11-26j2. Joystick look (touch default) and inverted drag.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1u';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1v';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -40,6 +40,11 @@ const PITCH_LIMIT = 80 * Math.PI / 180;
 const LOOK_DELTA_CLAMP_TOUCH = 48; // CSS px per event
 const LOOK_DELTA_CLAMP_MOUSE = 64;
 const LOOK_SENS_KEY = 'roundhouse.lookSensitivity';
+const LOOK_MODE_KEY = 'roundhouse.lookMode';
+const LOOK_JOY_DEAD_PX = 8;       // CSS px dead zone around the look-joystick anchor
+const LOOK_JOY_RANGE_PX = 90;     // CSS px offset at which the max turn rate is reached
+const LOOK_JOY_YAW_MAX = 90 * Math.PI / 180;   // rad/s at 1×, full deflection
+const LOOK_JOY_PITCH_MAX = 90 * Math.PI / 180; // rad/s at 1×, full deflection
 const ORBIT_ROTATE_SPEED = 0.50; // OrbitControls default is 1.0
 const ORBIT_DAMPING = 0.10;
 
@@ -65,6 +70,10 @@ let yawTarget = yaw;
 let pitchTarget = pitch;
 let moveVX = 0, moveVZ = 0;
 let lookSens = LOOK_SENS_DEFAULT;
+let lookMode = 'drag'; // 'joystick' | 'drag' — default is joystick on touch, drag otherwise
+let lookJoy = { active: false, pointerId: null, ax: 0, ay: 0, x: 0, y: 0 };
+let looking = false;
+let lookPtr = null;
 let seated = false;
 let eyeOffset = EYE_STAND;
 let floorY = FFL_Y;
@@ -4150,7 +4159,9 @@ function setMode(next, opts = {}) {
   document.getElementById('hint').textContent = mode === 'orbit'
     ? 'Orbit: drag to look, scroll or pinch to zoom. Tap a door to open it.'
     : (isTouch()
-      ? 'Walk: use the joystick to move, drag to look. Stand/Sit for eye height. Tap a door to open it.'
+      ? (lookMode === 'joystick'
+        ? 'Walk: move with the joystick; hold and lean to look. Stand/Sit for eye height. Tap a door to open it.'
+        : 'Walk: use the joystick to move, drag to look. Stand/Sit for eye height. Tap a door to open it.')
       : 'Walk: WASD to move, click the view and move the mouse to look. Stand/Sit sets eye height (1.75 m / 1.15 m). Going out a door steps down 180 mm to grade. Tap a door to open it.');
 }
 
@@ -4188,9 +4199,81 @@ function clampDelta(dx, dy, maxPx) {
   return { dx, dy };
 }
 function applyLookDelta(dx, dy, kind) {
+  // Direct / standard FPS: move or drag right turns right (yaw+); move or drag up looks up (pitch+).
+  // (v1s/v1u yaw was inverted: drag/mouse right turned left.)
   const scale = (kind === 'touch' ? LOOK_SENS_TOUCH : LOOK_SENS_MOUSE) * lookSens;
-  yawTarget = wrapAngle(yawTarget - dx * scale);
+  yawTarget = wrapAngle(yawTarget + dx * scale);
   pitchTarget = clampPitch(pitchTarget - dy * scale);
+}
+
+function lookJoyRates() {
+  if (!lookJoy.active) return { yawRate: 0, pitchRate: 0, dx: 0, dy: 0, dist: 0, t: 0 };
+  const dx = lookJoy.x - lookJoy.ax;
+  const dy = lookJoy.y - lookJoy.ay;
+  const dist = Math.hypot(dx, dy);
+  if (dist <= LOOK_JOY_DEAD_PX) return { yawRate: 0, pitchRate: 0, dx, dy, dist, t: 0 };
+  const t = Math.min(1, (dist - LOOK_JOY_DEAD_PX) / Math.max(1, LOOK_JOY_RANGE_PX - LOOK_JOY_DEAD_PX));
+  const ux = dx / dist, uy = dy / dist;
+  return {
+    yawRate: ux * t * LOOK_JOY_YAW_MAX * lookSens,          // right offset → turn right
+    pitchRate: -uy * t * LOOK_JOY_PITCH_MAX * lookSens,     // up (negative screen y) → look up
+    dx, dy, dist, t
+  };
+}
+
+function applyLookJoy(dt) {
+  if (!lookJoy.active) return;
+  const r = lookJoyRates();
+  if (r.yawRate === 0 && r.pitchRate === 0) return;
+  yawTarget = wrapAngle(yawTarget + r.yawRate * dt);
+  pitchTarget = clampPitch(pitchTarget + r.pitchRate * dt);
+}
+
+function endLook() {
+  lookJoy.active = false;
+  lookJoy.pointerId = null;
+  looking = false;
+  lookPtr = null;
+}
+
+function loadLookMode() {
+  try {
+    const raw = localStorage.getItem(LOOK_MODE_KEY);
+    if (raw === 'joystick' || raw === 'drag') return raw;
+  } catch (err) { /* private mode */ }
+  return isTouch() ? 'joystick' : 'drag';
+}
+
+function persistLookMode(v) {
+  try { localStorage.setItem(LOOK_MODE_KEY, v); } catch (err) { /* ignore */ }
+}
+
+function syncLookModeUI() {
+  const bJ = document.getElementById('btnLookJoy');
+  const bD = document.getElementById('btnLookDrag');
+  if (bJ) bJ.setAttribute('aria-pressed', String(lookMode === 'joystick'));
+  if (bD) bD.setAttribute('aria-pressed', String(lookMode === 'drag'));
+}
+
+function setLookMode(next, { persist = true, syncUi = true } = {}) {
+  lookMode = (next === 'joystick') ? 'joystick' : 'drag';
+  if (lookMode === 'drag') endLook();
+  if (persist) persistLookMode(lookMode);
+  if (syncUi) syncLookModeUI();
+  syncHudLabels();
+  return lookMode;
+}
+
+function setLookJoyOffset(dx, dy, origin) {
+  const ax = (origin && origin.x != null) ? origin.x : 200;
+  const ay = (origin && origin.y != null) ? origin.y : 400;
+  lookJoy.active = true;
+  lookJoy.pointerId = -1;
+  lookJoy.ax = ax;
+  lookJoy.ay = ay;
+  lookJoy.x = ax + dx;
+  lookJoy.y = ay + dy;
+  return lookJoyRates();
 }
 function loadLookSens() {
   try {
@@ -4280,6 +4363,7 @@ function setSeated(on, { snap = false } = {}) {
 }
 
 function updateWalk(dt) {
+  applyLookJoy(dt);
   yaw = dampAngle(yaw, yawTarget, dt, LOOK_TAU);
   pitch = damp(pitch, pitchTarget, dt, LOOK_TAU);
 
@@ -4479,6 +4563,11 @@ async function init() {
 
 function bindUI() {
   setLookSensitivity(loadLookSens(), { persist: false, syncUi: true });
+  setLookMode(loadLookMode(), { persist: false, syncUi: true });
+  const btnLookJoy = document.getElementById('btnLookJoy');
+  const btnLookDrag = document.getElementById('btnLookDrag');
+  if (btnLookJoy) btnLookJoy.addEventListener('click', () => setLookMode('joystick'));
+  if (btnLookDrag) btnLookDrag.addEventListener('click', () => setLookMode('drag'));
   const lookSlider = document.getElementById('lookSensSlider');
   if (lookSlider) {
     lookSlider.min = String(LOOK_SENS_MIN);
@@ -4570,25 +4659,41 @@ function bindUI() {
   // Pointer: click doors / measure; walk look; orbit is handled by OrbitControls.
   // Look-drag (touch and non-locked pointer): ignore the first delta after pointerdown,
   // clamp per-event spikes, and scale in CSS pixels (devicePixelRatio-independent).
-  let downX = 0, downY = 0, downT = 0, looking = false, lastX = 0, lastY = 0;
-  let lookPtr = null, lookIgnoreNext = false;
-  function endLook() {
-    looking = false;
-    lookPtr = null;
+  // Joystick look (default on touch): the down point is an anchor; held offset sets a
+  // continuous yaw/pitch rate. Look and the move joystick use distinct pointer IDs.
+  let downX = 0, downY = 0, downT = 0, lastX = 0, lastY = 0;
+  let lookIgnoreNext = false;
+  function stopLookGesture() {
     lookIgnoreNext = false;
+    endLook();
   }
   canvas.addEventListener('pointerdown', (e) => {
     downX = lastX = e.clientX; downY = lastY = e.clientY; downT = performance.now();
-    if (mode === 'walk' && !pointerLocked && !inJoy(e)) {
-      looking = true;
-      lookPtr = e.pointerId;
-      lookIgnoreNext = true;
-      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* already captured */ }
+    if (mode !== 'walk' || pointerLocked || inJoy(e)) return;
+    if (looking || lookPtr != null) return; // another finger is already looking
+    if (joyPtr != null && e.pointerId === joyPtr) return;
+    looking = true;
+    lookPtr = e.pointerId;
+    lookIgnoreNext = true;
+    if (lookMode === 'joystick') {
+      lookJoy.active = true;
+      lookJoy.pointerId = e.pointerId;
+      lookJoy.ax = lookJoy.x = e.clientX;
+      lookJoy.ay = lookJoy.y = e.clientY;
     }
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* already captured */ }
   });
   canvas.addEventListener('pointermove', (e) => {
     if (mode === 'walk' && pointerLocked) return; // movement handled by mousemove
     if (!looking || (lookPtr != null && e.pointerId !== lookPtr)) return;
+    if (lookMode === 'joystick' && lookJoy.active) {
+      lookJoy.x = e.clientX;
+      lookJoy.y = e.clientY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lookIgnoreNext = false;
+      return;
+    }
     if (lookIgnoreNext) {
       lookIgnoreNext = false;
       lastX = e.clientX;
@@ -4602,9 +4707,10 @@ function bindUI() {
     applyLookDelta(dx, dy, kind);
   });
   function onLookUp(e) {
+    if (lookPtr != null && e.pointerId !== lookPtr) return;
     const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
     const elapsed = performance.now() - downT;
-    endLook();
+    stopLookGesture();
     if (moved < 8 && elapsed < 600) {
       if (measureOn) { pickMeasure(e); return; }
       if (pickDoor(e)) return;
@@ -4614,10 +4720,13 @@ function bindUI() {
     }
   }
   canvas.addEventListener('pointerup', onLookUp);
-  canvas.addEventListener('pointercancel', endLook);
+  canvas.addEventListener('pointercancel', (e) => {
+    if (lookPtr != null && e.pointerId !== lookPtr) return;
+    stopLookGesture();
+  });
   document.addEventListener('pointerlockchange', () => {
     pointerLocked = document.pointerLockElement === canvas;
-    if (pointerLocked) endLook();
+    if (pointerLocked) stopLookGesture();
   });
   document.addEventListener('mousemove', (e) => {
     if (!pointerLocked || mode !== 'walk') return;
@@ -4733,11 +4842,21 @@ window.__roundhouse = {
     lookTau: LOOK_TAU,
     moveTau: MOVE_TAU,
     pitchLimitDeg: 80,
+    lookMode,
+    lookJoyDeadPx: LOOK_JOY_DEAD_PX,
+    lookJoyRangePx: LOOK_JOY_RANGE_PX,
+    lookJoyYawMaxDeg: LOOK_JOY_YAW_MAX * 180 / Math.PI,
+    lookJoyPitchMaxDeg: LOOK_JOY_PITCH_MAX * 180 / Math.PI,
+    lookJoy: { ...lookJoy, ...lookJoyRates() },
     orbitRotateSpeed: (orbit && orbit.rotateSpeed) || ORBIT_ROTATE_SPEED,
     orbitDamping: (orbit && orbit.dampingFactor) || ORBIT_DAMPING,
     orbitDampingEnabled: !!(orbit && orbit.enableDamping)
   }),
   setLookSensitivity,
+  setLookMode,
+  setLookJoyOffset,
+  releaseLookJoy: endLook,
+  applyLookDelta,
   step(dt) {
     const d = Math.max(0, Math.min(0.05, Number(dt) || 0));
     if (d && mode === 'walk') updateWalk(d);

@@ -315,3 +315,15 @@ Walk mode:
 - Stand/Sit toggle in the top header (visible in Walk mode, after Orbit/Walk): eye height **1.75 m** standing and **1.15 m** seated, above the local floor, eased with a 0.18 s time constant (v1s look/move damping kept).
 - Local floor is FFL (0) inside the house and the utility, and **grade (−180 mm)** outside. Crossing an open garden door, back door or utility door eases the 180 mm step over the plinth band (about 0.3 m, 0.16 s time constant).
 - **Couch view** (Views panel): seated on the living-room couch at (−1.42, 1.15, 1.60), looking south (yaw π) toward windows 24/25. **ASSUMED** — the couch actually faces west toward the garden, in the SW bay, and is not against the south curved wall. This is the closest sensible seated south view from that couch, used in this one model.
+
+
+## v1v — joystick look (touch default) and inverted drag
+
+Geometry is unchanged from v1u / rev j2.
+
+Walk look:
+
+- **Joystick look** (default on touch, available on mouse-drag too): on pointer down the touch point is the anchor. While held, the view turns continuously toward the finger's offset — left turns left, right turns right, up looks up, down looks down. A dead zone of **8 CSS px** sits around the anchor; the rate ramps linearly to a maximum at **90 CSS px**. At 1× the max yaw and pitch rates are **90°/s**. The Look sensitivity slider (0.2×–2.0×, persisted) scales both joystick look and drag look. v1s easing (LOOK_TAU 0.15 s) still damps yaw/pitch toward the moving target, so start and stop are smooth; releasing the finger stops the rate. Pitch stays clamped at ±80°.
+- **Drag look** is still available via the **Look: Joystick / Drag** toggle in the header, next to the Look sensitivity slider (visible in Walk mode, wraps on a phone without clipping). The choice is persisted as `localStorage['roundhouse.lookMode']`. If none is stored, touch devices default to joystick and others to drag.
+- Drag direction was inverted to match the joystick: **drag left turns the view left**, drag right turns right, drag up looks up, drag down looks down. Pointer-lock mouse (desktop click-to-lock) used the same inverted-yaw path as v1s; it is now **standard FPS** (mouse right looks right, mouse up looks up). Unlocked mouse drag matches the touch drag signs.
+- The existing move joystick and look use separate pointer IDs, so one thumb can move while the other looks.

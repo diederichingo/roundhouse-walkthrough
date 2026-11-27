@@ -32,11 +32,17 @@ header.top h1 {
 }
 header.top h1 span { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
 
-.look-sens {
+.look-controls {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-left: auto;
+  flex-wrap: wrap;
+}
+.look-sens {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 600;
@@ -44,6 +50,30 @@ header.top h1 span { display: block; font-size: 11px; font-weight: 500; color: v
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
+}
+.look-mode { display: none; }
+body.walk .look-mode {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.look-mode-lab {
+  padding: 0 8px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.look-mode button {
+  appearance: none; border: 0; background: #2a2622; color: var(--ink);
+  padding: 8px 12px; font: inherit; font-weight: 600; cursor: pointer;
+}
+.look-mode button[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
 }
 .look-sens input[type="range"] {
   width: 120px;
@@ -175,18 +205,37 @@ body.walk.touch #hint { left: 156px; }
   }
   .tool { margin-left: 0; }
   .tools { gap: 3px; }
+  .look-controls {
+    margin-left: 0;
+    flex: 1 1 100%;
+    gap: 6px;
+  }
   .look-sens {
     margin-left: 0;
     flex: 1 1 100%;
     gap: 6px;
     font-size: 11px;
     padding: 2px 0 2px;
+    min-width: 0;
   }
   .look-sens input[type="range"] {
     flex: 1 1 auto;
     width: auto;
-    min-width: 120px;
+    min-width: 80px;
     height: 32px;
+  }
+  body.walk .look-mode {
+    flex: 0 1 auto;
+    max-width: 100%;
+  }
+  .look-mode-lab {
+    padding: 0 6px 0 8px;
+    font-size: 11px;
+  }
+  .look-mode button {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 32px;
   }
   body.walk .posture {
     margin-left: 0;

@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1b1916">
-  <title>Els’s roundhouse — Option B walkthrough · v1u</title>
+  <title>Els’s roundhouse — Option B walkthrough · v1v</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=1u">
+  <link rel="stylesheet" href="css/style.css?v=1v">
 </head>
 <body>
   <div id="loading">Loading the roundhouse…</div>
@@ -15,7 +15,7 @@
   <div id="ui">
     <header class="top">
       <h1>Els’s roundhouse, Penamacor
-        <span>Option B walkthrough · v1u · not for construction</span>
+        <span>Option B walkthrough · v1v · not for construction</span>
       </h1>
       <div class="modes" role="group" aria-label="View mode">
         <button id="btnOrbit" aria-pressed="true">Orbit</button>
@@ -32,11 +32,18 @@
         <button class="tool" id="btnHeights" aria-pressed="false">Heights</button>
         <button class="tool" id="btnMeasure" aria-pressed="false">Tape</button>
       </div>
-      <label class="look-sens" for="lookSensSlider">
-        Look sensitivity
-        <input type="range" id="lookSensSlider" min="0.2" max="2" step="0.05" value="1" aria-label="Look sensitivity">
-        <span id="lookSensVal">1.0×</span>
-      </label>
+      <div class="look-controls">
+        <div class="look-mode" role="group" aria-label="Look mode">
+          <span class="look-mode-lab">Look:</span>
+          <button type="button" id="btnLookJoy" aria-pressed="false">Joystick</button>
+          <button type="button" id="btnLookDrag" aria-pressed="false">Drag</button>
+        </div>
+        <label class="look-sens" for="lookSensSlider">
+          Look sensitivity
+          <input type="range" id="lookSensSlider" min="0.2" max="2" step="0.05" value="1" aria-label="Look sensitivity">
+          <span id="lookSensVal">1.0×</span>
+        </label>
+      </div>
     </header>
     <button id="togglePanel" aria-label="Toggle panel">i</button>
     <div id="structLegend" hidden>
@@ -144,7 +151,7 @@
         <div class="compass-view" aria-hidden="true"></div>
       </div>
     </div>
-    <div id="hint">Orbit: drag to look, scroll or pinch to zoom. Walk: WASD and mouse on a computer; joystick and drag to look on a phone. Stand/Sit sets eye height (1.75 m / 1.15 m). Going out a door steps down 180 mm to grade. Tap a door to open it.</div>
+    <div id="hint">Orbit: drag to look, scroll or pinch to zoom. Walk: WASD and mouse on a computer; move joystick and hold-to-look (joystick look, default on a phone) or drag to look. Stand/Sit sets eye height (1.75 m / 1.15 m). Going out a door steps down 180 mm to grade. Tap a door to open it.</div>
     <div id="joy"><div class="knob"></div></div>
   </div>
   <script type="importmap">
@@ -155,6 +162,6 @@
     }
   }
   </script>
-  <script type="module" src="js/app.js?v=1u"></script>
+  <script type="module" src="js/app.js?v=1v"></script>
 </body>
 </html>
