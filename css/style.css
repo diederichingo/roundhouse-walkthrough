@@ -28,9 +28,34 @@ header.top {
 }
 header.top h1 {
   margin: 0; font-size: 15px; font-weight: 650; letter-spacing: .01em;
-  flex: 1 1 auto; min-width: 180px;
+  flex: 1 1 auto; min-width: 0;
 }
 header.top h1 span { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+
+.brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+.ver-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 750;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  padding: 5px 11px;
+  border-radius: 999px;
+  line-height: 1;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+  user-select: none;
+}
 
 .look-controls {
   display: flex;
@@ -197,8 +222,10 @@ body.walk.touch #hint { left: 156px; }
     gap: 6px;
     align-items: flex-start;
   }
-  header.top h1 { flex: 1 1 100%; min-width: 0; font-size: 13px; }
+  header.top h1 { flex: 1 1 auto; min-width: 0; font-size: 13px; }
   header.top h1 span { font-size: 10px; }
+  .brand { flex: 1 1 auto; min-width: 0; max-width: calc(100% - 44px); }
+  .ver-badge { font-size: 15px; padding: 5px 11px; }
   .modes button, .tool {
     padding: 6px 8px;
     font-size: 12px;

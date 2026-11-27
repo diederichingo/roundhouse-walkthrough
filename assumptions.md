@@ -327,3 +327,24 @@ Walk look:
 - **Drag look** is still available via the **Look: Joystick / Drag** toggle in the header, next to the Look sensitivity slider (visible in Walk mode, wraps on a phone without clipping). The choice is persisted as `localStorage['roundhouse.lookMode']`. If none is stored, touch devices default to joystick and others to drag.
 - Drag direction was inverted to match the joystick: **drag left turns the view left**, drag right turns right, drag up looks up, drag down looks down. Pointer-lock mouse (desktop click-to-lock) used the same inverted-yaw path as v1s; it is now **standard FPS** (mouse right looks right, mouse up looks up). Unlocked mouse drag matches the touch drag signs.
 - The existing move joystick and look use separate pointer IDs, so one thumb can move while the other looks.
+
+
+## v1w — look-direction signs, cache bust, visible version
+
+Geometry is unchanged. Look rates and the Joystick / Drag toggle are as in v1v.
+
+Tom reported that on his phone, finger left turned the view right (and up looked down) on both axes. That matches the pre-v1v drag signs (v1u: drag left turned right). His phone may still have been serving a cached v1u/v1v index, so v1w makes cache busting explicit and re-checks the signs against the camera's world forward vector, not only internal yaw.
+
+Look signs (joystick and drag, also pointer-lock mouse as standard FPS):
+
+- Finger or drag left: the view turns left. Facing north (yaw 0, looking −Z), the camera forward vector rotates toward −X (west).
+- Right: turns right (forward toward +X).
+- Up: looks up (forward +Y).
+- Down: looks down (forward −Y).
+
+Cache busting:
+
+- `index.html` sends no-cache / no-store / must-revalidate meta tags.
+- A `version.json` file holds the live version. An inline script fetches it with `cache: 'no-store'` and, if it does not match the page's baked-in version, reloads with `?v=<live>&_rh=<timestamp>`.
+- Asset URLs keep `?v=1w`. Any service worker is unregistered on load.
+- A clear terracotta **v1w** badge sits in the header next to the title so the running version is obvious on a phone.

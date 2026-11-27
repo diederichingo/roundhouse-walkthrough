@@ -1,12 +1,13 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1v. Plan rev 2026-11-26j2. Joystick look (touch default) and inverted drag.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1w. Plan rev 2026-11-26j2. Look signs verified vs camera forward; cache bust.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1v';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1w';
 
+const APP_VERSION = '1w';
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
 
@@ -4199,8 +4200,10 @@ function clampDelta(dx, dy, maxPx) {
   return { dx, dy };
 }
 function applyLookDelta(dx, dy, kind) {
-  // Direct / standard FPS: move or drag right turns right (yaw+); move or drag up looks up (pitch+).
-  // (v1s/v1u yaw was inverted: drag/mouse right turned left.)
+  // Finger/drag left → view turns left (yaw−, toward −X when facing north);
+  // right → turns right; up → look up (pitch+, world +Y); down → look down.
+  // Signs verified against camera.getWorldDirection() (v1w). Pointer-lock mouse
+  // is standard FPS (mouse right looks right, mouse up looks up).
   const scale = (kind === 'touch' ? LOOK_SENS_TOUCH : LOOK_SENS_MOUSE) * lookSens;
   yawTarget = wrapAngle(yawTarget + dx * scale);
   pitchTarget = clampPitch(pitchTarget - dy * scale);
@@ -4835,7 +4838,14 @@ window.__roundhouse = {
     floorTarget: floorTargetAt(player.x, player.z),
     gradeY: GRADE_Y, fflY: FFL_Y
   }),
+  version: APP_VERSION,
+  getLookDir: () => {
+    const d = new THREE.Vector3();
+    if (camera) camera.getWorldDirection(d);
+    return { x: d.x, y: d.y, z: d.z, yaw, pitch, yawTarget, pitchTarget };
+  },
   getLookSettings: () => ({
+    version: APP_VERSION,
     sensitivity: lookSens,
     lookSensMouse: LOOK_SENS_MOUSE,
     lookSensTouch: LOOK_SENS_TOUCH,

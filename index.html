@@ -5,18 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1b1916">
-  <title>Els’s roundhouse — Option B walkthrough · v1v</title>
+  <meta name="rh-version" content="1w">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Els’s roundhouse — Option B walkthrough · v1w</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=1v">
+  <link rel="stylesheet" href="css/style.css?v=1w">
+  <script>
+  (function () {
+    var EXPECTED = '1w';
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (rs) {
+          rs.forEach(function (r) { r.unregister(); });
+        });
+      }
+    } catch (e) {}
+    function bump(live) {
+      try {
+        var u = new URL(location.href);
+        if (u.searchParams.get('v') === live && u.searchParams.get('_rh')) return;
+        u.searchParams.set('v', live);
+        u.searchParams.set('_rh', String(Date.now()));
+        location.replace(u.href);
+      } catch (err) {}
+    }
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.version) return;
+        if (String(data.version) !== EXPECTED) bump(String(data.version));
+      })
+      .catch(function () {});
+  })();
+  </script>
 </head>
 <body>
   <div id="loading">Loading the roundhouse…</div>
   <canvas id="c"></canvas>
   <div id="ui">
     <header class="top">
-      <h1>Els’s roundhouse, Penamacor
-        <span>Option B walkthrough · v1v · not for construction</span>
-      </h1>
+      <div class="brand">
+        <h1>Els’s roundhouse, Penamacor
+          <span>Option B walkthrough · not for construction</span>
+        </h1>
+        <span id="verBadge" class="ver-badge" title="Walkthrough version">v1w</span>
+      </div>
       <div class="modes" role="group" aria-label="View mode">
         <button id="btnOrbit" aria-pressed="true">Orbit</button>
         <button id="btnWalk" aria-pressed="false">Walk</button>
@@ -162,6 +197,6 @@
     }
   }
   </script>
-  <script type="module" src="js/app.js?v=1v"></script>
+  <script type="module" src="js/app.js?v=1w"></script>
 </body>
 </html>
