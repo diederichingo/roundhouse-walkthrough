@@ -58,6 +58,22 @@ header.top h1 span { display: block; font-size: 11px; font-weight: 500; color: v
   font-variant-numeric: tabular-nums;
 }
 
+.posture { display: none; }
+body.walk .posture {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.posture button {
+  appearance: none; border: 0; background: #2a2622; color: var(--ink);
+  padding: 8px 12px; font: inherit; font-weight: 600; cursor: pointer;
+}
+.posture button[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
+}
+
 .modes { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .modes button, .tool {
   appearance: none; border: 0; background: #2a2622; color: var(--ink);
@@ -171,6 +187,14 @@ body.walk.touch #hint { left: 156px; }
     width: auto;
     min-width: 120px;
     height: 32px;
+  }
+  body.walk .posture {
+    margin-left: 0;
+  }
+  .posture button {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 32px;
   }
   #panel { top: 96px; }
 }

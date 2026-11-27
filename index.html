@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1b1916">
-  <title>Els’s roundhouse — Option B walkthrough</title>
+  <title>Els’s roundhouse — Option B walkthrough · v1u</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=1t">
+  <link rel="stylesheet" href="css/style.css?v=1u">
 </head>
 <body>
   <div id="loading">Loading the roundhouse…</div>
@@ -15,11 +15,15 @@
   <div id="ui">
     <header class="top">
       <h1>Els’s roundhouse, Penamacor
-        <span>Option B walkthrough · v1t · not for construction</span>
+        <span>Option B walkthrough · v1u · not for construction</span>
       </h1>
       <div class="modes" role="group" aria-label="View mode">
         <button id="btnOrbit" aria-pressed="true">Orbit</button>
         <button id="btnWalk" aria-pressed="false">Walk</button>
+      </div>
+      <div class="posture" role="group" aria-label="Stand or sit">
+        <button type="button" id="btnStand" aria-pressed="true">Stand</button>
+        <button type="button" id="btnSit" aria-pressed="false">Sit</button>
       </div>
       <div class="tools" role="group" aria-label="View options">
         <button class="tool" id="btnRoofOff" aria-pressed="false" aria-label="Roof off">Roof off</button>
@@ -62,7 +66,7 @@
       <input id="sunSlider" type="range" min="0" max="1439" value="840">
       <div id="sunReadout">—</div>
 
-      <p id="raiseNote" class="raise-note">Chosen Option B — 16.5 × 12.4 m roof, 1.5 m east overhang, roof raised 200 mm. Plan rev 2026-11-26j.</p>
+      <p id="raiseNote" class="raise-note">Chosen Option B — 16.5 × 12.4 m roof, 1.5 m east overhang, roof raised 200 mm. Plan rev 2026-11-26j2.</p>
 
       <h2>Views</h2>
       <div id="views">
@@ -75,6 +79,7 @@
         <button type="button" data-view="outside-corner">Outside corner (uniform render)</button>
         <button type="button" data-view="bathroom-person">Bathroom with person</button>
         <button type="button" data-view="living">Living room</button>
+        <button type="button" data-view="couch-view">Couch view (ASSUMED)</button>
         <button type="button" data-view="window-reveal">Window reveal</button>
         <button type="button" data-view="post-coverage">Post coverage</button>
         <button type="button" data-view="ceiling">Ceiling</button>
@@ -139,7 +144,7 @@
         <div class="compass-view" aria-hidden="true"></div>
       </div>
     </div>
-    <div id="hint">Orbit: drag to look, scroll or pinch to zoom. Walk: WASD and mouse on a computer; joystick and drag to look on a phone. Tap a door to open it.</div>
+    <div id="hint">Orbit: drag to look, scroll or pinch to zoom. Walk: WASD and mouse on a computer; joystick and drag to look on a phone. Stand/Sit sets eye height (1.75 m / 1.15 m). Going out a door steps down 180 mm to grade. Tap a door to open it.</div>
     <div id="joy"><div class="knob"></div></div>
   </div>
   <script type="importmap">
@@ -150,6 +155,6 @@
     }
   }
   </script>
-  <script type="module" src="js/app.js?v=1t"></script>
+  <script type="module" src="js/app.js?v=1u"></script>
 </body>
 </html>

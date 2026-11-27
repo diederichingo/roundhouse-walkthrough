@@ -1,5 +1,5 @@
 /**
- * Interior set dressing for the Option B walkthrough (v1t):
+ * Interior set dressing for the Option B walkthrough (v1u):
  * scale figures, a 1.40 × 2.00 m bed, and a living-room grouping (couch and coffee table only).
  * Pieces are typical sizes for a sense of space, not from the drawings.
  */
@@ -322,6 +322,14 @@ export const VIEW_CAMS = {
   living: {
     label: 'Living room',
     cam: { x: -3.90, y: 1.70, z: 0.30, tx: -2.30, ty: 0.40, tz: 1.60 }
+  },
+  // ASSUMED: the living-room couch (centre −1.42, z 1.60) sits in the SW bay
+  // facing west toward the garden, not against the south curved wall. This
+  // viewpoint sits on that couch at 1.15 m, looking south to windows 24/25.
+  'couch-view': {
+    label: 'Couch view (ASSUMED)',
+    walk: { x: -1.42, z: 1.60, yaw: Math.PI, pitch: 0.06 },
+    sit: true
   },
   bedroom: {
     label: 'Bedroom',

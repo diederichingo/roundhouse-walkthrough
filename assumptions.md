@@ -304,3 +304,14 @@ What changed (all still ASSUMED):
 - There is no other gutter. The same south run already drains the utility east extension (outlet at the SE-ext post, x = +9.00, stop-end at x = +10.50). The north eave is the high side of the 7° roof; the east and west edges are rakes.
 
 New crown rim ≈ 2 936 mm AFF; outlet rim ≈ 2 921 mm AFF. Underside drip at the new edge ≈ 2 956 mm; top drip ≈ 3 016 mm.
+
+
+## v1u — Stand/Sit walk, couch view, 180 mm step to grade
+
+The approved rev j2 roof and posts are unchanged (no Option C, no overhang or raise). A plan check of v1t against `src_rev2026-11-26j2` and `geometry.json` found no dimensional discrepancies in posts, walls, openings, roof edges or heights. The only intentional departure from a flush covering at the south fascia is the v1t 50 mm covering projection into the gutter (ASSUMED).
+
+Walk mode:
+
+- Stand/Sit toggle in the top header (visible in Walk mode, after Orbit/Walk): eye height **1.75 m** standing and **1.15 m** seated, above the local floor, eased with a 0.18 s time constant (v1s look/move damping kept).
+- Local floor is FFL (0) inside the house and the utility, and **grade (−180 mm)** outside. Crossing an open garden door, back door or utility door eases the 180 mm step over the plinth band (about 0.3 m, 0.16 s time constant).
+- **Couch view** (Views panel): seated on the living-room couch at (−1.42, 1.15, 1.60), looking south (yaw π) toward windows 24/25. **ASSUMED** — the couch actually faces west toward the garden, in the SW bay, and is not against the south curved wall. This is the closest sensible seated south view from that couch, used in this one model.

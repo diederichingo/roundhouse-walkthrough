@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1t. Plan rev 2026-11-26j. South gutter lowered to the drip.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1u. Plan rev 2026-11-26j2. Stand/Sit walk and couch view.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1t';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1u';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -19,7 +19,13 @@ const mm = (v) => v * 0.001;
 const ROOF_RAISE = 0.200;
 const LAT = 40.17;
 const LON = -7.17;
-const EYE = 1.70;
+const EYE_STAND = 1.75;
+const EYE_SIT = 1.15;
+const EYE_TAU = 0.18;            // stand/sit easing, seconds
+const FLOOR_TAU = 0.16;          // FFL ↔ grade step easing, seconds
+const FFL_Y = 0;
+const GRADE_Y = -0.180;          // FFL is 180 mm above grade
+const EYE = EYE_STAND;           // default / standing eye height above the local floor
 const RADIUS = 0.22;
 const WALK_SPEED = 2.4;
 // Look / move feel (v1s). Slider is a multiplier on these calmer baselines (was 0.0025 mouse / 0.005 touch).
@@ -59,7 +65,10 @@ let yawTarget = yaw;
 let pitchTarget = pitch;
 let moveVX = 0, moveVZ = 0;
 let lookSens = LOOK_SENS_DEFAULT;
-let player = new THREE.Vector3(WALK_START.x, EYE, WALK_START.z);
+let seated = false;
+let eyeOffset = EYE_STAND;
+let floorY = FFL_Y;
+let player = new THREE.Vector3(WALK_START.x, FFL_Y + EYE_STAND, WALK_START.z);
 let fly = null; // {fromPos,toPos,fromTarget,toTarget,t,dur}
 let activeClash = null;
 let activeView = null;
@@ -3991,6 +4000,10 @@ function flyToClash(id, instant) {
     b.setAttribute('aria-pressed', String(b.dataset.clash === id));
   });
   syncHudLabels();
+  if (view.walk) {
+    applyWalkViewpoint(view);
+    return;
+  }
   if (instant) {
     if (mode !== 'orbit') setMode('orbit', { keepCamera: true });
     fly = null;
@@ -4015,6 +4028,10 @@ function setView(name, instant) {
     b.setAttribute('aria-pressed', String(b.dataset.view === name));
   });
   syncHudLabels();
+  if (view.walk) {
+    applyWalkViewpoint(view);
+    return;
+  }
   if (instant) {
     if (mode !== 'orbit') setMode('orbit', { keepCamera: true });
     fly = null;
@@ -4042,7 +4059,20 @@ function setWalkView(name) {
   }
   moveVX = moveVZ = 0;
   collide(player);
-  player.y = EYE;
+  snapWalkHeight();
+}
+
+function applyWalkViewpoint(view) {
+  setMode('walk', { keepPlayer: true });
+  setSeated(!!view.sit, { snap: true });
+  const w = view.walk || view.cam;
+  player.set(w.x, 0, w.z);
+  snapLook(w.yaw != null ? w.yaw : 0, w.pitch != null ? w.pitch : 0);
+  moveVX = moveVZ = 0;
+  collide(player);
+  // Seated viewpoints stay on the furniture (the couch AABB would otherwise push the camera off the seat).
+  if (view.sit) { player.x = w.x; player.z = w.z; }
+  snapWalkHeight();
 }
 
 function syncHudLabels() {
@@ -4100,11 +4130,14 @@ function setMode(next, opts = {}) {
   orbit.enabled = mode === 'orbit' && !fly;
   if (mode === 'walk') {
     fly = null;
-    player.set(WALK_START.x, EYE, WALK_START.z);
-    snapLook(WALK_START.yaw, WALK_START.pitch);
-    moveVX = moveVZ = 0;
-    collide(player);
-    player.y = EYE;
+    if (!opts.keepPlayer) {
+      player.set(WALK_START.x, FFL_Y, WALK_START.z);
+      snapLook(WALK_START.yaw, WALK_START.pitch);
+      setSeated(false, { snap: false });
+      moveVX = moveVZ = 0;
+      collide(player);
+      snapWalkHeight();
+    }
     if (pointerLocked && document.exitPointerLock) document.exitPointerLock();
   } else if (!opts.keepCamera) {
     camera.position.set(START_CAM.x, START_CAM.y, START_CAM.z);
@@ -4117,8 +4150,8 @@ function setMode(next, opts = {}) {
   document.getElementById('hint').textContent = mode === 'orbit'
     ? 'Orbit: drag to look, scroll or pinch to zoom. Tap a door to open it.'
     : (isTouch()
-      ? 'Walk: use the joystick to move, drag to look. Tap a door to open it.'
-      : 'Walk: WASD to move, click the view and move the mouse to look. Tap a door to open it.');
+      ? 'Walk: use the joystick to move, drag to look. Stand/Sit for eye height. Tap a door to open it.'
+      : 'Walk: WASD to move, click the view and move the mouse to look. Stand/Sit sets eye height (1.75 m / 1.15 m). Going out a door steps down 180 mm to grade. Tap a door to open it.');
 }
 
 function isTouch() {
@@ -4186,6 +4219,66 @@ function setLookSensitivity(v, { persist = true, syncUi = true } = {}) {
   return lookSens;
 }
 
+
+function floorTargetAt(x, z) {
+  const rIn = 4.875, rPlOut = 5.200; // wall inner face; plinth outer (R ± 0.200)
+  const u = colliders.find((c) => c.type === 'utility');
+  if (u) {
+    const insideU = x > u.ix0 && x < u.ix1 && z > u.iz0 && z < u.iz1;
+    if (insideU) return FFL_Y;
+    const uDoor = doors.find((d) => d.kind === 'utility');
+    if (uDoor && uDoor.open && x >= u.doorX0 && x <= u.doorX1) {
+      const band = 0.45;
+      if (z < u.doorZ + 0.20 && z > u.doorZ - band) {
+        const tt = Math.max(0, Math.min(1, (u.doorZ - z) / band));
+        const s = tt * tt * (3 - 2 * tt);
+        return FFL_Y + (GRADE_Y - FFL_Y) * s;
+      }
+    }
+  }
+  const rho = Math.hypot(x, z);
+  const ring = colliders.find((c) => c.type === 'ring');
+  let inDoor = false;
+  if (ring) {
+    const th = thetaOf(x, z);
+    for (const op of ring.openings) {
+      const door = doors.find((d) => d.kind === op.kind);
+      if (!door || !door.open) continue;
+      let a0 = op.a0, a1 = op.a1, tt = th;
+      if (a1 < a0) a1 += 360;
+      if (tt < a0) tt += 360;
+      if (tt >= a0 && tt <= a1) { inDoor = true; break; }
+    }
+  }
+  if (inDoor) {
+    const tt = Math.max(0, Math.min(1, (rho - rIn) / Math.max(0.05, rPlOut - rIn)));
+    const s = tt * tt * (3 - 2 * tt);
+    return FFL_Y + (GRADE_Y - FFL_Y) * s;
+  }
+  if (rho <= rIn) return FFL_Y;
+  return GRADE_Y;
+}
+
+function snapWalkHeight() {
+  floorY = floorTargetAt(player.x, player.z);
+  eyeOffset = seated ? EYE_SIT : EYE_STAND;
+  player.y = floorY + eyeOffset;
+}
+
+function syncPostureUI() {
+  const bStand = document.getElementById('btnStand');
+  const bSit = document.getElementById('btnSit');
+  if (bStand) bStand.setAttribute('aria-pressed', String(!seated));
+  if (bSit) bSit.setAttribute('aria-pressed', String(seated));
+}
+
+function setSeated(on, { snap = false } = {}) {
+  seated = !!on;
+  if (snap) snapWalkHeight();
+  syncPostureUI();
+  return seated;
+}
+
 function updateWalk(dt) {
   yaw = dampAngle(yaw, yawTarget, dt, LOOK_TAU);
   pitch = damp(pitch, pitchTarget, dt, LOOK_TAU);
@@ -4215,7 +4308,15 @@ function updateWalk(dt) {
     moveVX = 0;
     moveVZ = 0;
   }
-  player.y = EYE;
+  const ft = floorTargetAt(player.x, player.z);
+  const et = seated ? EYE_SIT : EYE_STAND;
+  const kf = 1 - Math.exp(-dt / FLOOR_TAU);
+  const ke = 1 - Math.exp(-dt / EYE_TAU);
+  floorY += (ft - floorY) * kf;
+  eyeOffset += (et - eyeOffset) * ke;
+  if (Math.abs(floorY - ft) < 0.0005) floorY = ft;
+  if (Math.abs(eyeOffset - et) < 0.0005) eyeOffset = et;
+  player.y = floorY + eyeOffset;
   camera.position.copy(player);
   const look = new THREE.Vector3(
     player.x + Math.sin(yaw) * Math.cos(pitch),
@@ -4388,6 +4489,11 @@ function bindUI() {
 
   document.getElementById('btnOrbit').addEventListener('click', () => setMode('orbit'));
   document.getElementById('btnWalk').addEventListener('click', () => setMode('walk'));
+  const btnStand = document.getElementById('btnStand');
+  const btnSit = document.getElementById('btnSit');
+  if (btnStand) btnStand.addEventListener('click', () => { if (mode !== 'walk') setMode('walk', { keepPlayer: true }); setSeated(false); });
+  if (btnSit) btnSit.addEventListener('click', () => { if (mode !== 'walk') setMode('walk', { keepPlayer: true }); setSeated(true); });
+  syncPostureUI();
   document.getElementById('btnClash').addEventListener('click', () => {
     setClashes(!clashesOn);
   });
@@ -4600,13 +4706,26 @@ window.__roundhouse = {
   },
   openAllDoors() { doors.forEach((d) => { if (!d.open) toggleDoor(d); }); },
   getPlayer: () => ({x: player.x, y: player.y, z: player.z, yaw, pitch, yawTarget, pitchTarget, vx: moveVX, vz: moveVZ}),
-  setPlayer(x,z,y=EYE, yawi=null, pitchi=null) {
-    player.set(x,y,z);
+  setPlayer(x,z,y=null, yawi=null, pitchi=null) {
+    player.set(x, y != null ? y : FFL_Y, z);
     if (yawi != null || pitchi != null) snapLook(yawi != null ? yawi : yaw, pitchi != null ? pitchi : pitch);
     moveVX = moveVZ = 0;
     collide(player);
-    player.y = y;
+    if (y != null) {
+      floorY = floorTargetAt(player.x, player.z);
+      eyeOffset = y - floorY;
+      player.y = y;
+    } else {
+      snapWalkHeight();
+    }
   },
+  setSeated,
+  getWalkState: () => ({
+    seated, eyeOffset, floorY,
+    eyeStand: EYE_STAND, eyeSit: EYE_SIT,
+    floorTarget: floorTargetAt(player.x, player.z),
+    gradeY: GRADE_Y, fflY: FFL_Y
+  }),
   getLookSettings: () => ({
     sensitivity: lookSens,
     lookSensMouse: LOOK_SENS_MOUSE,
