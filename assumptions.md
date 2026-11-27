@@ -283,3 +283,24 @@ Walk look and move felt twitchy (instant yaw/pitch at 0.0025 rad/px mouse and 0.
 - Orbit: `enableDamping` stays on, `dampingFactor` 0.10 (was 0.08), `rotateSpeed` 0.50 (was 1.0).
 - Touch look-drag: ignore the first pointermove after pointerdown, clamp per-event deltas (48 CSS px touch / 64 px mouse), handle pointercancel, capture the pointer.
 - Teleports (`setMode`, `setWalkView`, `setPlayer`) snap look and zero walk velocity so screenshot helpers stay instant.
+
+
+## v1t — south gutter lowered to the drip (ASSUMED)
+
+The v1o gutter was genuinely too high, not a perspective effect. The 150 mm half-round, 3 mm/m fall, outlet positions and fascia-bracket spacing are unchanged. Structure (purlins, main-beam ends) stays flush at y = ±6 200 mm.
+
+What was wrong (v1o–v1s):
+
+- The roof covering was flush with the fascia. The top drip sat **6 mm short** of the gutter's back inner rim (underside **14 mm short**), so water would fall behind the trough, not into it.
+- The hanging used the *top* of the 60 mm sandwich as the drip, with the crown rim only **22 mm** below that top — which put the rim **38 mm above** the underside of the covering. At the outlets the rim was still **23 mm above** the underside.
+- Crown rim AFF 3 000 mm; underside of the flush covering 2 963 mm; top 3 022 mm.
+
+What changed (all still ASSUMED):
+
+- The weather covering (and its underside plane) now projects **50 mm** past the south fascia only. The north eave stays flush (high side, no gutter). Beams and eave purlins are unchanged.
+- The gutter is lowered so the **crown** (highest) back rim sits **20 mm** below the underside drip of the extended covering (within the 10–25 mm band). Outlets are **15 mm** lower still (3 mm/m over 5 m), so **35 mm** below the underside.
+- With the 50 mm projection, the top drip overhangs about **44 mm** into the trough (underside about **36 mm**), i.e. in the 40–50 mm range measured to the top drip from the back inner rim.
+- Brackets and downpipe tops follow the new invert at high and low ends.
+- There is no other gutter. The same south run already drains the utility east extension (outlet at the SE-ext post, x = +9.00, stop-end at x = +10.50). The north eave is the high side of the 7° roof; the east and west edges are rakes.
+
+New crown rim ≈ 2 936 mm AFF; outlet rim ≈ 2 921 mm AFF. Underside drip at the new edge ≈ 2 956 mm; top drip ≈ 3 016 mm.

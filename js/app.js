@@ -1,11 +1,11 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1s. Plan rev 2026-11-26j. Calmer look/move controls.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1t. Plan rev 2026-11-26j. South gutter lowered to the drip.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1s';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1t';
 
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
@@ -1236,8 +1236,13 @@ function buildModel() {
     const m = addBox(houseGroup, roofW, 0.200, 0.150, materials.timber, roofMidX, yTop - 0.100, z);
   });
 
-  // Roof sandwich panels — 16.5 × 12.4 m plan, edges flush with beams and eave purlins.
-  const slopeLen = beamPlan / Math.cos(7 * DEG);
+  // Roof sandwich panels — 16.5 × 12.4 m plan at the structure (beams, eave purlins
+  // flush). The weather covering alone projects 50 mm past the south fascia so it
+  // can drip into the gutter (ASSUMED, v1t). North eave stays flush (high side, no gutter).
+  const SOUTH_COVER_OH = 0.050;
+  const slopeLen = (beamPlan + SOUTH_COVER_OH) / Math.cos(7 * DEG);
+  const roofZc = SOUTH_COVER_OH / 2;
+  const roofYc = coverFFL(0) + 0.030 * Math.cos(7 * DEG) - roofZc * TAN7;
   const roofMats = [
     materials.roof, materials.roof,
     materials.roof, materials.roofUnder,
@@ -1245,7 +1250,7 @@ function buildModel() {
   ];
   const roof = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.060, slopeLen), roofMats);
   roof.rotation.x = 7 * DEG;
-  roof.position.set(roofMidX, coverFFL(0) + 0.030 * Math.cos(7 * DEG), 0);
+  roof.position.set(roofMidX, roofYc, roofZc);
   roof.castShadow = true;
   roof.receiveShadow = false;
   tagLayer(roof, 'roofCover');
@@ -1254,14 +1259,15 @@ function buildModel() {
   // Dedicated timber underside, offset below the panel so it never self-shadows.
   const roofUnder = new THREE.Mesh(new THREE.PlaneGeometry(roofW, slopeLen), materials.roofUnder);
   roofUnder.rotation.set(Math.PI / 2 + 7 * DEG, 0, 0);
-  roofUnder.position.set(roofMidX, coverFFL(0) - 0.035, 0);
+  roofUnder.position.set(roofMidX, coverFFL(-roofZc) - 0.035, roofZc);
   roofUnder.receiveShadow = false;
   roofUnder.castShadow = false;
   tagLayer(roofUnder, 'roofCover');
   houseGroup.add(roofUnder);
 
-  // South gutter at the low eave (ASSUMED). Half-round hung on the flush
-  // purlin/panel edge; no roof geometry is changed.
+  // South gutter at the low eave (ASSUMED). Half-round hung from the flush
+  // eave purlin; the covering (only) projects 50 mm past the fascia into the
+  // trough, and the crown back rim sits 20 mm below the underside drip (v1t).
   function buildSouthGutter() {
     const ID = 0.150;                 // 150 mm half-round, nominal bore
     const TH = 0.002;
@@ -1272,7 +1278,14 @@ function buildModel() {
     const zFascia = -mm(G.roof.y0);   // +6.200, outer face of the south eave
     const gap = 0.008;
     const zC = zFascia + gap + R_OUT;
-    const dripY = coverFFL(mm(G.roof.y0)) + 0.060 * Math.cos(7 * DEG);
+    // Covering projects 50 mm past the flush fascia (SOUTH_COVER_OH).
+    const zMidS = zFascia + SOUTH_COVER_OH;
+    const yBotDrip = coverFFL(-zMidS);                         // underside at the drip
+    const yTopDrip = yBotDrip + 0.060 * Math.cos(7 * DEG);     // top of covering at the drip
+    const zBotDrip = zMidS - 0.030 * Math.sin(7 * DEG);
+    const zTopDrip = zMidS + 0.030 * Math.sin(7 * DEG);
+    const dripY = yBotDrip; // drip used for hanging: underside of the covering edge
+    const BACK_CLEAR = 0.020; // 20 mm below the underside drip at the crown (range 10–25)
     const x0 = mm(G.roof.x0);         // −6.000
     const x1 = mm(G.roof.x1);         // +10.500
     // Lows at the SW, SE and SE-ext posts; crowns mid-run. Same outlet invert.
@@ -1290,9 +1303,10 @@ function buildModel() {
       [ 9.00, 0],
       [x1,   Math.abs(x1 - outlets[2].x) * FALL]
     ];
-    // Crown rim ~22 mm below the roof drip so water falls into the trough.
+    // Crown (highest) back rim sits BACK_CLEAR below the underside drip.
+    // Outlets and stop-ends are lower with the 3 mm/m fall.
     const crownRel = 5.00 * FALL;
-    const I0 = dripY - 0.022 - R_IN - crownRel;
+    const I0 = dripY - BACK_CLEAR - R_IN - crownRel;
     function invertAt(x) {
       if (x <= relPts[0][0]) return I0 + relPts[0][1];
       for (let i = 0; i < relPts.length - 1; i++) {
@@ -1472,6 +1486,9 @@ function buildModel() {
     tagLayer(group, 'rainwater');
     houseGroup.add(group);
 
+    const rimCrown = I0 + crownRel + R_IN;
+    const rimOutlet = I0 + R_IN;
+    const zBackIn = zC - R_IN;
     gutterSpec = {
       assumed: true,
       kind: 'half-round',
@@ -1484,8 +1501,26 @@ function buildModel() {
       dripY,
       x0, x1,
       outlets: pipes,
-      stations: relPts.map(([x, rel]) => ({ x, invert: I0 + rel, rel })),
-      hidesWith: ['roofOff', 'structureOnly']
+      stations: relPts.map(([x, rel]) => ({ x, invert: I0 + rel, rel, rim: I0 + rel + R_IN })),
+      hidesWith: ['roofOff', 'structureOnly'],
+      coverOverhangMm: SOUTH_COVER_OH * 1000,
+      backClearMm: BACK_CLEAR * 1000,
+      drip: {
+        yTop: yTopDrip, yBot: yBotDrip,
+        zTop: zTopDrip, zBot: zBotDrip,
+        zMid: zMidS
+      },
+      rim: { crown: rimCrown, outlet: rimOutlet, backZ: zBackIn, frontZ: zC + R_IN },
+      clearanceMm: {
+        crownBelowUnderside: (yBotDrip - rimCrown) * 1000,
+        crownBelowTop: (yTopDrip - rimCrown) * 1000,
+        outletBelowUnderside: (yBotDrip - rimOutlet) * 1000,
+        outletBelowTop: (yTopDrip - rimOutlet) * 1000
+      },
+      overhangIntoGutterMm: {
+        top: (zTopDrip - zBackIn) * 1000,
+        bot: (zBotDrip - zBackIn) * 1000
+      }
     };
   }
   buildSouthGutter();
@@ -4592,9 +4627,10 @@ window.__roundhouse = {
   setRoofOff,
   setStructureOnly,
   getViewModes: () => ({ roofOff, structureOnly }),
-  setOrbit(x,y,z, tx=2, ty=1.6, tz=0) {
+  setOrbit(x,y,z, tx=2, ty=1.6, tz=0, minD) {
     if (mode !== 'orbit') setMode('orbit', { keepCamera: true });
     fly = null;
+    if (minD != null && orbit) orbit.minDistance = minD;
     camera.position.set(x,y,z);
     orbit.target.set(tx,ty,tz);
     orbit.update();
