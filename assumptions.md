@@ -418,3 +418,12 @@ Every dimension below is **ASSUMED** until the Roundhouse plan update arrives. T
 - The roof covering keeps its 50 mm drip lip past the south fascia (v1t) so it drips into the gutter. Everything else, including the N, W and E edges, stops at the roof edge.
 
 **Removed from v1y:** the vent under the back-door side light (250 mm), the 900 × 2 400 peninsula at x 0.30–1.20, the 600 × 600 hob base, the kitchen tap, and the v1y overhang edges (±5.875 / 9.850).
+
+## v1z1 (28 Nov 2026): sink box as on B-06. Everything else stays as v1z.
+
+Control confirmed items 1, 2, 3, 5 and 6 of the v1z report (F1 in bay 5, low vents at 500, shed plate 2 850, T2 in bay 21 at 600 AFF, shed door 2 100 / head 2 140). Those stay as modelled.
+
+**Sink box (ASSUMED — Els still has to give the kitchen block sizes):**
+- Drawn as on B-06, east of the N post, along the straight N wall.
+- Plan: x +0.430 to +0.920 (490 mm wide, about 0.5 m), 3.000 m into the room from the wall face (wall at y 4.70 / z −4.70, south end at y 1.70 / z −1.70).
+- Counter 900 high, with a stainless sink bowl near the wall (bowl 360 × 400, 160 deep, centred on the top, 450 mm from the wall). Bowl size and position ASSUMED.

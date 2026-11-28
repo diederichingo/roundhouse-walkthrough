@@ -289,7 +289,7 @@ export function furnishInterior(ctx) {
 export const VIEW_CAMS = {
   kitchen: {
     label: 'Kitchen (straight wall and high window)',
-    cam: { x: 1.45, y: 1.55, z: -2.35, tx: -0.25, ty: 2.45, tz: -4.75 }
+    cam: { x: 2.4, y: 1.7, z: -1.6, tx: 0.1, ty: 0.95, tz: -3.8 }
   },
   'kitchen-person': {
     label: 'Kitchen with person',
@@ -305,7 +305,7 @@ export const VIEW_CAMS = {
   },
   'kitchen-peninsula': {
     label: 'Kitchen peninsula',
-    cam: { x: 1.9, y: 2.2, z: -1.0, tx: -0.45, ty: 0.9, tz: -3.8 }
+    cam: { x: 2.6, y: 2.4, z: -0.4, tx: -0.2, ty: 0.9, tz: -3.5 }
   },
   'inner-wall': {
     label: 'Inner wall and partitions',
