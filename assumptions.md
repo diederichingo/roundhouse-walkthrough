@@ -437,3 +437,11 @@ The B-06 sink box (x +0.43 to +0.92, 0.5 × 3 m) and its bowl are removed. There
 **Freestanding gas cooker (ASSUMED):** a typical 600 × 600 × 900 unit, flush beside the peninsula’s wall end, against the N wall (x −1.370 to −0.770, z −4.70 to −4.10), under the west side of window 15. Four burners, oven door facing south into the room. The woman in red stands in front of it at (−1.07, −3.72), facing north.
 
 **CHECK — cooker past the west end of the straight wall:** 600 mm (cooker) + 650 mm (peninsula) = 1 250 mm, but only 1 195 mm of straight wall remains west of the N post (wall ends at x −1.295). The cooker’s west 75 mm therefore goes past the wall end. At that corner the back sits about 21 mm into the curved ring (bay 16). Placement is ASSUMED; Els to confirm the kitchen sizes.
+
+## v1z3 (28 Nov 2026): aligned to rev 2026-11-28k2. Kitchen stays as v1z2.
+
+k2 figures used exactly:
+- **Braces:** N-N legs 440; W-W and EX-E legs 520; all other legs stay 600. The N–S brace at the N post is 25 mm east of the post centreline (section x −25 to +75), giving 75 mm clear of the high-window east reveal. Flitch plates (Connections rev n: pair of 80×8×250 S235 HDG, 2 × M16 at each foot and the 26 screwed heads) are not modelled (optional; CHECK engineer).
+- **SW shed post:** (4.701, −2.550), 400 mm east of the previous 4.600, clear of SP-06 / HP-06 / UT-06.
+- **Shed door jambs:** 150 mm timber jamb in the 200 mm north pier (50 mm left to the E-ext south face). A matching 150 mm south jamb is shown so the 1 120 mm clear (SE-util to the south jamb) is visible. Opening stays RO 880 / 800 clear × 2 100.
+- **UTP-N:** housed 30 mm into the E and E-ext posts and side-fixed to their south faces; it does not run over the post tops (those posts continue to the beam). The east plate is housed into E-ext the same way and still sits on SE-util.

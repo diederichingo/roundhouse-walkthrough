@@ -1,13 +1,13 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1z2. Rev 2026-11-28k: attached shed, kitchen peninsula, 750 mm overhang from the post line, +200 mm, vents, taps.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1z3. Rev 2026-11-28k: attached shed, kitchen peninsula, 750 mm overhang from the post line, +200 mm, vents, taps.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1z2';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1z3';
 
-const APP_VERSION = '1z2';
+const APP_VERSION = '1z3';
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
 
@@ -45,7 +45,7 @@ function applyV1yPlan(G) {
     backDoorClearanceMm: null
   });
   G.utilPosts = [
-    { name: 'SW-shed', x: 4600, y: SHED.yS * 1000, base: 100, top: 2330, length: 2230, kind: 'utility' },
+    { name: 'SW-shed', x: 4701, y: SHED.yS * 1000, base: 100, top: 2330, length: 2230, kind: 'utility' },
     { name: 'SE-shed', x: 9000, y: SHED.yS * 1000, base: 100, top: 2330, length: 2230, kind: 'utility' }
   ];
   // Vents (ASSUMED positions). Low ~500 above the slab; high in the round wall above the head plate.
@@ -1596,7 +1596,14 @@ function buildModel() {
   const braceMeshes = [];
   const END_POSTS = new Set(['SW corner', 'SE corner', 'NW corner', 'NE corner', 'SE-ext', 'NE-ext']);
   function addBrace(b) {
-    const px = mm(b.x), pz = wz(mm(b.y));
+    let px = mm(b.x), pz = wz(mm(b.y));
+    // k2: N–S brace at the N post is 25 mm east of the post CL (section x −25 to +75).
+    if (b.post === 'N ring' && b.dir === 'N-S') px += 0.025;
+    // k2 legs: N-N 440, W-W and EX-E 520, so nothing sticks out past the roof; others 600.
+    let leg = 0.600;
+    if (b.post === 'N ring' && b.dir === 'N-S' && b.side === 1) leg = 0.440;
+    if (b.post === 'W ring' && b.dir === 'E-W' && b.side === -1) leg = 0.520;
+    if (b.post === 'E-ext' && b.dir === 'E-W' && b.side === 1) leg = 0.520;
     const postSoffit = soffitFFL(mm(b.y)); // main beam soffit at this northing
     const alongBeam = b.dir === 'N-S';
     // 12 level (E–W) braces on the six end posts sit flush with the outer post
@@ -1611,34 +1618,36 @@ function buildModel() {
     }
     const purlinSof = coverFFL(purlinY) - 0.200;
     const topSof = alongBeam ? postSoffit : purlinSof;
-    const foot = topSof - 0.600;
+    const foot = topSof - leg;
     const s = b.side; // +1 north or east
     let tHoriz;
     if (alongBeam) {
-      tHoriz = 0.600 / (1 - s * TAN7);
+      tHoriz = leg / (1 - s * TAN7);
     } else {
-      tHoriz = 0.600;
+      tHoriz = leg;
     }
-    const length = Math.hypot(tHoriz, 0.600);
+    const length = Math.hypot(tHoriz, leg);
     const m = addBox(houseGroup, 0.100, 0.100, length, materials.timber, 0, 0, 0);
     // Place centre of brace, then rotate
     if (alongBeam) {
       // in Y-Z plane (up-north)
       const midZ = pz - s * tHoriz / 2;
-      const midY = foot + 0.600 / 2;
+      const midY = foot + leg / 2;
       m.position.set(px, midY, midZ);
       m.rotation.set(0, 0, 0);
-      const dir = new THREE.Vector3(0, 0.600, -s * tHoriz).normalize();
+      const dir = new THREE.Vector3(0, leg, -s * tHoriz).normalize();
       const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
       m.quaternion.copy(quat);
     } else {
       const midX = px + s * tHoriz / 2;
-      const midY = foot + 0.300;
+      const midY = foot + leg / 2;
       m.position.set(midX, midY, zBrace);
-      const dir = new THREE.Vector3(s * tHoriz, 0.600, 0).normalize();
+      const dir = new THREE.Vector3(s * tHoriz, leg, 0).normalize();
       const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
       m.quaternion.copy(quat);
     }
+    m.userData.leg = leg;
+    m.userData.tHoriz = tHoriz;
     m.userData.brace = b;
     m.userData.underside = foot - (0.100 / Math.SQRT2);
     m.userData.foot = foot;
@@ -1754,10 +1763,22 @@ function buildModel() {
   installEastWall((dZ0 + dZ1) / 2, dZ1 - dZ0, doorHead + 0.100, plateTop);
   addBox(houseGroup, 0.070, 0.040, dZ1 - dZ0, materials.timber, ux1, (doorH + doorHead) / 2, (dZ0 + dZ1) / 2);
   addBox(houseGroup, 0.150, 0.100, dZ1 - dZ0, materials.timber, ux1, doorHead + 0.050, (dZ0 + dZ1) / 2);
-  // Top plate on N, S, E walls.
-  addBox(houseGroup, ux1 + 0.075 - nX0, 0.100, 0.150, materials.timber, (nX0 + ux1 + 0.075) / 2, plateTop - 0.050, uZNorth);
+  // Top plates. k2: UTP-N is housed 30 mm into the E and E-ext posts and side-fixed
+  // to their south faces — it does not run over the post tops (those posts continue
+  // to the beam). The east plate is housed into E-ext the same way; it can still sit on SE-util.
+  const HOUSE_IN = 0.030;
+  const eextS = POST_HALF;                 // E / E-ext south face at z = +0.100
+  const utpNz = eextS - HOUSE_IN + 0.075;  // 0.145: north edge 30 mm into the post
+  const utpNx0 = 5.0 + POST_HALF - HOUSE_IN; // 5.070, 30 mm into the E post east face
+  const utpNx1 = ux1 - POST_HALF + HOUSE_IN; // 8.930, 30 mm into E-ext west face
+  addBox(houseGroup, utpNx1 - utpNx0, 0.100, 0.150, materials.timber, (utpNx0 + utpNx1) / 2, plateTop - 0.050, utpNz);
   addBox(houseGroup, ux1 + 0.075 - sX0, 0.100, 0.150, materials.timber, (sX0 + ux1 + 0.075) / 2, plateTop - 0.050, uZSouth);
-  addBox(houseGroup, 0.150, 0.100, uLenNS, materials.timber, ux1, plateTop - 0.050, uMidZ);
+  const utpEz0 = eextS - HOUSE_IN, utpEz1 = uZSouth + 0.075;
+  addBox(houseGroup, 0.150, 0.100, utpEz1 - utpEz0, materials.timber, ux1, plateTop - 0.050, (utpEz0 + utpEz1) / 2);
+  // k2: 150 mm jamb in the 200 mm north pier (50 mm left to the E-ext south face).
+  // South jamb already required (k2: “already there”); 150 mm, so 1 120 clear to SE-util.
+  addBox(houseGroup, 0.070, doorHead - PL_TOP, 0.150, materials.timber, ux1, (PL_TOP + doorHead) / 2, (eextS + 0.050 + dZ0) / 2);
+  addBox(houseGroup, 0.070, doorHead - PL_TOP, 0.150, materials.timber, ux1, (PL_TOP + doorHead) / 2, (dZ1 + dZ1 + 0.150) / 2);
   // SE-shed post (the NE corner is the E-ext post, built into the wall).
   G.utilPosts.forEach((p) => {
     const y0 = PL_TOP + mm(p.base), bodyTop = plateTop - 0.100;
@@ -1941,7 +1962,7 @@ function buildModel() {
       return END.has(b.post);
     })();
     if (endLevel) return;
-    const headX = px + b.side * 0.600;
+    const headX = px + b.side * (m.userData.tHoriz || 0.600);
     const headZ = pz;
     const rho = Math.hypot(headX, headZ);
     if (rho > rCeil + 0.05) return;
@@ -3158,7 +3179,7 @@ function buildModel() {
         liningXMm: Math.round(liningX * 1000),
         braceWestMm: Math.round(braceWest * 1000),
         clearMm: Math.round(dist * 1000),
-        planNote: '≥ 50 mm (CHECK)',
+        planNote: '75 mm (rev k2)',
         sillMm: HW.sill, headMm: HW.head
       };
     }
