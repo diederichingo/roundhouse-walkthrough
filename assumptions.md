@@ -445,3 +445,20 @@ k2 figures used exactly:
 - **SW shed post:** (4.701, −2.550), 400 mm east of the previous 4.600, clear of SP-06 / HP-06 / UT-06.
 - **Shed door jambs:** 150 mm timber jamb in the 200 mm north pier (50 mm left to the E-ext south face). A matching 150 mm south jamb is shown so the 1 120 mm clear (SE-util to the south jamb) is visible. Opening stays RO 880 / 800 clear × 2 100.
 - **UTP-N:** housed 30 mm into the E and E-ext posts and side-fixed to their south faces; it does not run over the post tops (those posts continue to the beam). The east plate is housed into E-ext the same way and still sits on SE-util.
+
+## v1z4 (28 Nov 2026): aligned to rev 2026-11-28k4 (and k3). Kitchen and all other v1z3 items stay.
+
+k4 / k3 figures used exactly:
+
+- **SE / NE east eave braces (k4):** a 600 / 600 knee brace now runs east along the eave from each of the SE (5.000, −5.550) and NE (5.000, +5.550) posts. Long point at x = 5.700 (600 mm from the east face). The brace sits under the eave purlin with 50 mm bearing, flush with the outer post face. Galvanised ABR90-style angle at the head, as on the other end-eave braces. No new braces at SE-ext, SW, NW or NE-ext. Brace count 32 → 34. Flitch plates at the feet are still not modelled (optional; CHECK engineer).
+
+- **Purlins (k3):** each of the nine lines is packed 5 750 west (x −5.750 to 0) + 5 000 middle (0 to 5.000) + 4 750 east (5.000 to 9.750), totalling 15 500. The east piece is 4 750, not 5 500.
+
+- **Shed N closing (k3):** already correct in v1z3. The y = 0 purlin sits over the whole north shed wall, so the closing stops 20 mm under the purlin soffit (top 3 704 AFF, 854 over the 2 850 plate), closing up to the main roof. The south wall (y = −2 550) is not under a purlin and still runs to 20 mm under the covering. The east wall still stops under the x = +9 beam soffit.
+
+- **Stray wall east of the NE mid-eave post:** there was no lime sandwich or closing along the N eave. A clip bug in the shed ceiling-insulation fill had swapped an inverted purlin-bay range and painted a 4.7 m rectangle of insulation under the roof from x 4.45–8.9, z −4.593 to 0.125 (y +4.593 to −0.125) — a long, flat, cream/tan plane beside the NE post, east of x = +5.000. That leftover is removed. The only wall remaining in that span is the shed’s N wall at y = 0: full sandwich to the 2 850 plate, plus the upper closing to the main roof. The house wall at x = +5.000 stays at about y = +1.124.
+
+- **UTP-N / UTP-E (k3, not on Control’s short list):** UTP-N (3 860) is now in the wall plane (z = 0), housed 30 mm into the facing post faces only (E face of E ring, W face of E-ext) — no longer side-fixed to the south faces, which had put the plate out of the wall plane. UTP-E (2 580) is housed 30 mm into the S face of E-ext and runs to the south outer face of SE-util (z 0.070 to 2.650).
+
+**Not modelled (k3 items, consistent with the earlier skip):** flitch plates; shed west-end cuts (USP-SW 155 mm / UTP-S 4 654 mm at wall face x = 4 446 at y = −2 550); IW-ES 3 188 mm (was 3 183 in k2); brace-head infill triangles at E-E / EX-W / EX-S.
+

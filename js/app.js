@@ -1,13 +1,13 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1z3. Rev 2026-11-28k: attached shed, kitchen peninsula, 750 mm overhang from the post line, +200 mm, vents, taps.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1z4. Rev 2026-11-28k: attached shed, kitchen peninsula, 750 mm overhang from the post line, +200 mm, vents, taps.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1z3';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1z4';
 
-const APP_VERSION = '1z3';
+const APP_VERSION = '1z4';
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
 
@@ -33,7 +33,8 @@ function applyV1yPlan(G) {
   G.posts.forEach(moveEnd);
   G.extPosts.forEach(moveEnd);
   // Corner posts: two braces each, one along each wall line (beam line N–S and eave line E–W).
-  const keepEW = { 'SW corner': 1, 'NW corner': 1, 'SE corner': -1, 'NE corner': -1, 'SE-ext': -1, 'NE-ext': -1 };
+  // k4: SE and NE also keep an east E-W brace along the eave (side +1). No new braces at SW, NW, SE-ext, NE-ext.
+  const keepEW = { 'SW corner': 1, 'NW corner': 1, 'SE-ext': -1, 'NE-ext': -1 };
   G.braces = G.braces.filter((b) => !(b.post in keepEW) || b.dir === 'N-S' || b.side === keepEW[b.post]);
   G.braces.forEach(moveEnd);
   G.extStrip.y0 = -EAVE_EDGE * 1000; G.extStrip.y1 = EAVE_EDGE * 1000;
@@ -1296,10 +1297,13 @@ function buildModel() {
   });
 
   // Purlins (level). Eave pieces have their outer face at y = ±6 200 (CL ±6 125).
+  // k3/k4 pack: 9 × 5 750 west + 9 × 5 000 middle + 9 × 4 750 east (= 15 500).
   G.purlin.ys.forEach((ymm) => {
     const z = wz(mm(ymm));
     const yTop = coverFFL(mm(ymm));
-    const m = addBox(houseGroup, roofW, 0.200, 0.150, materials.timber, roofMidX, yTop - 0.100, z);
+    [[roofX0, 0], [0, 5.0], [5.0, roofX1]].forEach(([x0, x1]) => {
+      addBox(houseGroup, x1 - x0, 0.200, 0.150, materials.timber, (x0 + x1) / 2, yTop - 0.100, z);
+    });
   });
 
   // Roof sandwich panels — 16.5 × 12.4 m plan at the structure (beams, eave purlins
@@ -1599,6 +1603,8 @@ function buildModel() {
     let px = mm(b.x), pz = wz(mm(b.y));
     // k2: N–S brace at the N post is 25 mm east of the post CL (section x −25 to +75).
     if (b.post === 'N ring' && b.dir === 'N-S') px += 0.025;
+    // k4: SE/NE east eave braces, 600 mm legs; long point (head tip) at x = 5.700.
+    if ((b.post === 'SE corner' || b.post === 'NE corner') && b.dir === 'E-W' && b.side === 1) px += 0.050;
     // k2 legs: N-N 440, W-W and EX-E 520, so nothing sticks out past the roof; others 600.
     let leg = 0.600;
     if (b.post === 'N ring' && b.dir === 'N-S' && b.side === 1) leg = 0.440;
@@ -1767,13 +1773,15 @@ function buildModel() {
   // to their south faces — it does not run over the post tops (those posts continue
   // to the beam). The east plate is housed into E-ext the same way; it can still sit on SE-util.
   const HOUSE_IN = 0.030;
-  const eextS = POST_HALF;                 // E / E-ext south face at z = +0.100
-  const utpNz = eextS - HOUSE_IN + 0.075;  // 0.145: north edge 30 mm into the post
-  const utpNx0 = 5.0 + POST_HALF - HOUSE_IN; // 5.070, 30 mm into the E post east face
-  const utpNx1 = ux1 - POST_HALF + HOUSE_IN; // 8.930, 30 mm into E-ext west face
-  addBox(houseGroup, utpNx1 - utpNx0, 0.100, 0.150, materials.timber, (utpNx0 + utpNx1) / 2, plateTop - 0.050, utpNz);
+  const eextS = POST_HALF; // E-ext south face at z = +0.100
+  // k3: UTP-N (3 860) is in the wall plane, housed 30 mm into the facing post faces only
+  // (E face of the E ring, W face of E-ext) — not side-fixed to the south faces.
+  const utpNx0 = 5.0 + POST_HALF - HOUSE_IN; // 5.070
+  const utpNx1 = ux1 - POST_HALF + HOUSE_IN; // 8.930  → length 3.860
+  addBox(houseGroup, utpNx1 - utpNx0, 0.100, 0.150, materials.timber, (utpNx0 + utpNx1) / 2, plateTop - 0.050, uZNorth);
   addBox(houseGroup, ux1 + 0.075 - sX0, 0.100, 0.150, materials.timber, (sX0 + ux1 + 0.075) / 2, plateTop - 0.050, uZSouth);
-  const utpEz0 = eextS - HOUSE_IN, utpEz1 = uZSouth + 0.075;
+  // k3: UTP-E (2 580) housed 30 mm into the S face of E-ext, to the south outer face of SE-util.
+  const utpEz0 = eextS - HOUSE_IN, utpEz1 = uZSouth + POST_HALF; // 0.070 → 2.650
   addBox(houseGroup, 0.150, 0.100, utpEz1 - utpEz0, materials.timber, ux1, plateTop - 0.050, (utpEz0 + utpEz1) / 2);
   // k2: 150 mm jamb in the 200 mm north pier (50 mm left to the E-ext south face).
   // South jamb already required (k2: “already there”); 150 mm, so 1 120 clear to SE-util.
@@ -2032,10 +2040,10 @@ function buildModel() {
     const zLo = Math.min(-yA, -yB) + 0.075; // keep clear of the 150 mm purlin
     const zHi = Math.max(-yA, -yB) - 0.075;
     houseBayPolys(zLo, zHi).forEach((loop) => prismFromLoop(loop, yInsTop0, ROOF_INS_T, materials.insulation));
-    const uPoly = rectLoop(
-      uCeilX0, Math.max(zLo, uCeilZ0),
-      uCeilX1, Math.min(zHi, uCeilZ1)
-    );
+    // Only fill where the purlin bay actually overlaps the shed interior.
+    // (A swapped inverted range used to paint a 4.7 m rectangle under the N-east overhang.)
+    const zA = Math.max(zLo, uCeilZ0), zB = Math.min(zHi, uCeilZ1);
+    const uPoly = (zB - zA > 0.04) ? rectLoop(uCeilX0, zA, uCeilX1, zB) : null;
     if (uPoly) prismFromLoop(uPoly, yInsTop0, ROOF_INS_T, materials.insulation);
   }
 
