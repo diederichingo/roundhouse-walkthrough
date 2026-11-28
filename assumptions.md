@@ -359,3 +359,32 @@ Hinges stay on the jambs. Walk collision already lets you through the ring openi
 The back door (single leaf + south side light) and the utility door are not double doors and were left as they are.
 
 ASSUMED: 90° hold-open; leaves are cut at FFL / the threshold, so they swing clear of the notched plinth (plinth in the door bay is 40 mm below FFL) and open over the 180 mm drop to grade (180 mm of air under the open leaf outside). No west gutter or downpipe. No plan swing-arc mesh is drawn.
+
+## v1y (28 Nov 2026, Roundhouse Control for Tom). Supersedes "plan exactly as drawn / no +20 cm"
+
+Every dimension below is **ASSUMED** until the Roundhouse plan update arrives. Their numbers will replace these.
+
+- **Raise +200 mm (ASSUMED):** the roof, beams, purlins, posts, upper closing and T&G all go up 200 mm (ROOF_RAISE 0.200 → 0.400). Window and door heights are unchanged. The head plate soffit stays at 2 375. The wall above the openings is 200 mm taller.
+- **Overhang (ASSUMED):** the reference is the **outside wall face** (R 5.125). S, W and N edges are at 5.125 + 0.750, giving y = ±5.875 and x = −5.875. The E edge is at 9.850: the outer face of the x = 9.00 ext posts (9.10) + 0.750. The roof cover laps 50 mm into the S gutter (this was already the case). The beams are trimmed 30 mm so their square-cut ends stay inside the edge.
+- **End posts (ASSUMED):** the corner and ext posts move from y ±5.0 to y ±5.675, so the beam overhangs 200 mm past the post centreline. The eave purlin centreline is at ±5.800 (outer face flush with the roof edge, inner face 5.725). Braces give 50 mm bearing.
+- **Braces (ASSUMED):** "normal" 45° knee braces. Each corner post (SW, NW, SE, NE, SE-ext, NE-ext) has 2 braces: one N–S (under the eave purlin) and one E–W (under the beam line). The ring posts keep their v1t braces.
+- **Shed / utility, attached (ASSUMED):** the shed shares the house wall with no gap and sits over bays 6–8 (θ ≈ 58°–90°).
+  - N wall centreline y −0.025. Its outer face is flush with the y = 0 E post face (+0.1), so the back door is unaffected.
+  - S wall centreline y −2.590. E wall centreline x 9.000; the x = 9.00 E post is built into the E wall.
+  - Interior is about 2.32 m N–S and 3.75–4.39 m E–W, against Tom's note of 2.15 × 3.3–3.7 (bigger because it is sized to the E windows and posts). Floor is at FFL.
+  - Shed plate is at 2 850. The ceiling is N–S joists at 600 c/c with T&G.
+- **Shed door (ASSUMED):** in the E wall, opening y −0.300 to −1.180 (880 wide, 800 clear). Door height 2 100, head 2 140, hinged north, opening outward to the east. A vent louvre sits above the door at about 2 450.
+- **Kit in the shed (ASSUMED):** boiler and geyser on the E wall south of the door; battery at x 6.2 and inverter on the S wall.
+- **Bathroom fan F1 (ASSUMED):** moved from bay 8 (which now faces into the shed) to bay 5, θ 52.2°, at 2 700.
+- **Kitchen (ASSUMED):**
+  - Peninsula 900 × 2 400 × 900 high, x 0.30–1.20, y +2.30 to +4.70. Only its N short end touches the straight N wall.
+  - Gas hob on a 600 × 600 base unit against the straight N wall under window 15 (centre x ≈ −0.55); hob 600 × 520.
+  - The 60-year-old woman in red stays at the hob.
+- **Low vents (ASSUMED, 50 mm-ish louvres):**
+  - VL1 bathroom, bay 3, θ 35.1°, at 500.
+  - VL2 living, bay 16, θ 195.5°, at 500.
+  - VL3 living, bay 9, θ 92.4°, at **250**. This is the panel under the back-door side light; there is no other living cob bay, so it is low.
+  - VL4 next to the kitchen, bay 13, θ 159.8°, at 500.
+- **High vents (ASSUMED):** VH1 θ 24°, VH2 θ 131° and VH3 θ 294°, all at 2 850 in the round wall above the head plate.
+- **Outside taps (ASSUMED):** one on the shed S wall (x 7.2, 550 high) and one on the house wall at θ 157.5° near the kitchen (550 high).
+- **Gutter (as v1t, re-levelled):** 150 half-round, 3 mm/m fall to outlets at the SW, SE and SE-ext posts (x −5, 5, 9), with 100 mm downpipes. Front at 5.96 catches the drip line (cover laps 36–44 mm into the gutter).

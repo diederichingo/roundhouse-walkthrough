@@ -296,12 +296,16 @@ export const VIEW_CAMS = {
     cam: { x: 1.45, y: 1.55, z: -2.35, tx: -0.25, ty: 2.45, tz: -4.75 }
   },
   'utility-door': {
-    label: 'Utility door',
-    cam: { x: 5.15, y: 1.60, z: -0.85, tx: 6.51, ty: 1.15, tz: 0.60 }
+    label: 'Shed from the east (door, vent)',
+    cam: { x: 13.2, y: 2.2, z: 3.2, tx: 7.6, ty: 1.4, tz: 1.0 }
   },
   'utility-ceiling': {
-    label: 'Utility interior / ceiling',
-    cam: { x: 7.15, y: 1.55, z: 1.55, tx: 8.15, ty: 2.70, tz: 1.15 }
+    label: 'Shed interior / ceiling',
+    cam: { x: 5.6, y: 1.55, z: 0.6, tx: 8.4, ty: 2.0, tz: 2.0 }
+  },
+  'kitchen-peninsula': {
+    label: 'Kitchen peninsula',
+    cam: { x: 2.9, y: 2.3, z: -1.0, tx: 0.2, ty: 0.9, tz: -3.9 }
   },
   'inner-wall': {
     label: 'Inner wall and partitions',
