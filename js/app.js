@@ -1,13 +1,13 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1z1. Rev 2026-11-28k: attached shed, kitchen peninsula, 750 mm overhang from the post line, +200 mm, vents, taps.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1z2. Rev 2026-11-28k: attached shed, kitchen peninsula, 750 mm overhang from the post line, +200 mm, vents, taps.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1z1';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1z2';
 
-const APP_VERSION = '1z1';
+const APP_VERSION = '1z2';
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
 
@@ -2437,8 +2437,9 @@ function buildModel() {
       });
     })();
 
-    // --- Rev k kitchen: hob box at the straight N wall beside the N post, long granite counter 650 wide runs
-    // south 2 400 from the wall (length ASSUMED, CHECK). Only the short end touches the wall. 900 high. ---
+    // --- Rev k / v1z2 kitchen: one 650 × 2 400 peninsula, short end on the straight N wall
+    // (20 mm off the N post). Plain top — no hob or sink set into it. Freestanding gas cooker
+    // 600 × 600 × 900 (ASSUMED) sits beside the wall end, against the N wall under window 15. ---
     const COUNTER_H = 0.900;
     const PEN_W = 0.650, PEN_L = 2.400, PEN_X1 = -0.120; // 20 mm off the N post (post face x = −0.100)
     const pX0 = PEN_X1 - PEN_W, pX1 = PEN_X1, pZ0 = wallZ, pZ1 = wallZ + PEN_L;
@@ -2447,32 +2448,34 @@ function buildModel() {
     const top = addBox(houseGroup, PEN_W + 0.04, 0.050, PEN_L + 0.02, materials.white, (pX0 + pX1) / 2, 0.875, (pZ0 + pZ1) / 2 + 0.01);
     tagLayer(top, 'furniture');
     colliders.push({ type: 'aabb', x0: pX0, x1: pX1, z0: pZ0, z1: pZ1 });
-    const hobX = (pX0 + pX1) / 2, cZ1 = wallZ + 0.650;
-    const baseW = PEN_W, hobW = 0.600, hobD = 0.520; // ASSUMED
-    const hob = addBox(houseGroup, hobW, 0.040, hobD, materials.metal, hobX, 0.910, wallZ + 0.330);
-    tagLayer(hob, 'furniture');
     out.counterBox = { x0: pX0, x1: pX1, z0: pZ0, z1: pZ1 };
-    // Sink box as on B-06 (ASSUMED until Els gives kitchen sizes): east of the N post,
-    // along the straight N wall, x +0.43 to +0.92, 3.00 m into the room, 900 high, with a sink bowl.
-    const sX0 = 0.430, sX1 = 0.920, sW = sX1 - sX0, sL = 3.000;
-    const sZ0 = wallZ, sZ1 = wallZ + sL;
-    const sCar = addBox(houseGroup, sW, 0.850, sL, materials.timber, (sX0 + sX1) / 2, 0.425, (sZ0 + sZ1) / 2);
-    tagLayer(sCar, 'furniture');
-    const sTop = addBox(houseGroup, sW + 0.04, 0.050, sL + 0.02, materials.white, (sX0 + sX1) / 2, 0.875, (sZ0 + sZ1) / 2 + 0.01);
-    tagLayer(sTop, 'furniture');
-    colliders.push({ type: 'aabb', x0: sX0, x1: sX1, z0: sZ0, z1: sZ1 });
-    // Bowl near the wall (plumbing), 360 × 400, 160 deep, centred on the 490 mm top.
-    const bX = (sX0 + sX1) / 2, bZ = wallZ + 0.45;
-    const rim = addBox(houseGroup, 0.400, 0.012, 0.440, materials.metal, bX, 0.906, bZ);
-    tagLayer(rim, 'furniture');
-    const bowl = addBox(houseGroup, 0.360, 0.160, 0.400, materials.metal, bX, 0.820, bZ);
-    tagLayer(bowl, 'furniture');
-    out.sinkBox = { x0: sX0, x1: sX1, z0: sZ0, z1: sZ1 };
+    const ST_W = 0.600, ST_D = 0.600, ST_H = 0.900;
+    const stX1 = pX0, stX0 = pX0 - ST_W; // flush west of the peninsula's wall end
+    const stZ0 = wallZ, stZ1 = wallZ + ST_D;
+    const stX = (stX0 + stX1) / 2, stZ = (stZ0 + stZ1) / 2;
+    const body = addBox(houseGroup, ST_W, 0.850, ST_D, materials.metal, stX, 0.425, stZ);
+    tagLayer(body, 'furniture');
+    const stTop = addBox(houseGroup, ST_W, 0.040, ST_D, materials.metal, stX, 0.870, stZ);
+    tagLayer(stTop, 'furniture');
+    for (const [dx, dz] of [[-0.14, -0.14], [0.14, -0.14], [-0.14, 0.14], [0.14, 0.14]]) {
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.070, 0.070, 0.008, 16), materials.metal);
+      ring.position.set(stX + dx, 0.894, stZ + dz);
+      tagLayer(ring, 'furniture');
+      houseGroup.add(ring);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.050, 0.050, 0.016, 16), materials.gutter);
+      cap.position.set(stX + dx, 0.906, stZ + dz);
+      tagLayer(cap, 'furniture');
+      houseGroup.add(cap);
+    }
+    const oven = addBox(houseGroup, 0.480, 0.520, 0.020, materials.gutter, stX, 0.380, stZ1 + 0.010);
+    tagLayer(oven, 'furniture');
+    const handle = addBox(houseGroup, 0.280, 0.016, 0.030, materials.metal, stX, 0.620, stZ1 + 0.030);
+    tagLayer(handle, 'furniture');
+    colliders.push({ type: 'aabb', x0: stX0, x1: stX1, z0: stZ0, z1: stZ1 });
+    out.stoveBox = { x0: stX0, x1: stX1, z0: stZ0, z1: stZ1, w: ST_W, d: ST_D, h: ST_H };
     out.worktops = [
       { name: 'counter', ...out.counterBox, top: COUNTER_H },
-      { name: 'hob', x0: hobX - hobW / 2, x1: hobX + hobW / 2,
-        z0: wallZ + 0.330 - hobD / 2, z1: wallZ + 0.330 + hobD / 2, top: 0.930 },
-      { name: 'sink', ...out.sinkBox, top: COUNTER_H }
+      { name: 'stove', ...out.stoveBox, top: ST_H }
     ];
 
     // --- Item 6: high window, two top-hung outward sashes ---

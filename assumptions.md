@@ -427,3 +427,13 @@ Control confirmed items 1, 2, 3, 5 and 6 of the v1z report (F1 in bay 5, low ven
 - Drawn as on B-06, east of the N post, along the straight N wall.
 - Plan: x +0.430 to +0.920 (490 mm wide, about 0.5 m), 3.000 m into the room from the wall face (wall at y 4.70 / z −4.70, south end at y 1.70 / z −1.70).
 - Counter 900 high, with a stainless sink bowl near the wall (bowl 360 × 400, 160 deep, centred on the top, 450 mm from the wall). Bowl size and position ASSUMED.
+
+## v1z2 (28 Nov 2026): Tom’s kitchen correction. Sink box removed; freestanding cooker.
+
+The B-06 sink box (x +0.43 to +0.92, 0.5 × 3 m) and its bowl are removed. There is one counter only.
+
+**Peninsula (unchanged from v1z / rev k):** 650 × 2 400, short end on the straight N wall, x −0.770 to −0.120 (20 mm off the N post). Height 900. The top is plain granite — nothing is set into it (no hob, no sink).
+
+**Freestanding gas cooker (ASSUMED):** a typical 600 × 600 × 900 unit, flush beside the peninsula’s wall end, against the N wall (x −1.370 to −0.770, z −4.70 to −4.10), under the west side of window 15. Four burners, oven door facing south into the room. The woman in red stands in front of it at (−1.07, −3.72), facing north.
+
+**CHECK — cooker past the west end of the straight wall:** 600 mm (cooker) + 650 mm (peninsula) = 1 250 mm, but only 1 195 mm of straight wall remains west of the N post (wall ends at x −1.295). The cooker’s west 75 mm therefore goes past the wall end. At that corner the back sits about 21 mm into the curved ring (bay 16). Placement is ASSUMED; Els to confirm the kitchen sizes.
