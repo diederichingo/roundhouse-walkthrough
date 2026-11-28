@@ -388,3 +388,33 @@ Every dimension below is **ASSUMED** until the Roundhouse plan update arrives. T
 - **High vents (ASSUMED):** VH1 θ 24°, VH2 θ 131° and VH3 θ 294°, all at 2 850 in the round wall above the head plate.
 - **Outside taps (ASSUMED):** one on the shed S wall (x 7.2, 550 high) and one on the house wall at θ 157.5° near the kitchen (550 high).
 - **Gutter (as v1t, re-levelled):** 150 half-round, 3 mm/m fall to outlets at the SW, SE and SE-ext posts (x −5, 5, 9), with 100 mm downpipes. Front at 5.96 catches the drip line (cover laps 36–44 mm into the gutter).
+
+## v1z (28 Nov 2026): aligned to rev 2026-11-28k (Control's corrections). Rev k wins. Supersedes the v1y figures above where they differ
+
+**From rev k (not assumed):**
+- **Roof:** 15.5 × 11.5 m. Eaves y = ±5.750, west x = −5.750, east x = +9.750. The overhang is 750 from the in-wall post line (S/W/N) and 750 past the x = +9 posts on the east.
+- **End posts:** corner and end-eave posts at y = ±5.550 (200 mm of beam left past the post). Eave purlin CL ±5.675, outer face ±5.750.
+- **Braces:** corner and end-eave posts have 2 braces each, one along each wall line. The outward E–W braces are omitted.
+- **Roof underside above FFL:** S wall 3.310, centre 3.924, N wall 4.538. This is the top of the purlins, the model's "cover" datum, so no change was needed from v1y. Openings stay at 400 / 2 300 and the head plate stays 2 375.
+- **Shed:** joined to the east cob wall (bays 6–8). N wall at y = 0, S wall at y = −2.550 (about 200 mm clear of bathroom window 5), E wall on x = +9.000. Door faces east with an 800 clear opening. New posts at SW and SE only.
+- **Kitchen:** hob box at the straight N wall beside the N post. The granite counter is 650 wide and runs south 2 400 from the wall (length ASSUMED, CHECK). Only the short end touches the wall.
+- **Vents:**
+  - LV-B bay 3, LV-K bay 16, LV-L1 and LV-L2 in bay 26, all low at about 500.
+  - HV-S (bay 26), HV-W (bay 22) and HV-E (bay 13).
+  - SV-E above the shed door.
+- **Taps:** T1 on the shed east wall south of the door. T2 on the W garden plinth south of the garden doors (bay 21).
+
+**Still ASSUMED (not in rev k):**
+- Shed door: hinged on the N side, opening y −1.180 to −0.300 (880 wide, 800 clear), 2 100 high, head 2 140, opens outward east.
+- SW shed post at (x 4.60, y −2.550), 200 × 200, just outside the ring face. SE shed post at (9.000, −2.550).
+- Shed plate 2 850. The ceiling is N–S joists at 600 c/c under the T&G. The N wall stops under the y = 0 purlin.
+- Shed kit positions: boiler and geyser on the E wall south of the door; battery at x 6.2 and inverter on the S wall.
+- SV-E louvre 200 × 120 at about 2 450 above the door.
+- Peninsula at x −0.770 to −0.120 (20 mm off the N post, post face x −0.100). The hob (600 × 520) sits on its north end, 330 from the wall. The woman in red stands west of it at (−1.20, 4.25), facing east.
+- Vent positions inside each bay: LV-L1 θ 351.9°, LV-L2 θ 357.1°, HV-S θ 354.5° (bay 26); LV-B θ 35.1°; LV-K θ 195.5°; HV-W θ 294.2°; HV-E θ 161.2°.
+- High vents at 2 850 AFF. Low vents at 500 AFF, not the 450 on the old B-06 note. Louvre Ø100 with a 250 sleeve.
+- T1 at x 9.125, y 1.75 (z), 600 high. T2 at θ 276° on the wall face, 600 high (AFF, not above grade).
+- F1 shower fan: moved to bay 5 (θ 52.2°) at 2 700. Rev k keeps it "high in bay 8", but bay 8 is now inside the shed (FLAG).
+- The roof covering keeps its 50 mm drip lip past the south fascia (v1t) so it drips into the gutter. Everything else, including the N, W and E edges, stops at the roof edge.
+
+**Removed from v1y:** the vent under the back-door side light (250 mm), the 900 × 2 400 peninsula at x 0.30–1.20, the 600 × 600 hob base, the kitchen tap, and the v1y overhang edges (±5.875 / 9.850).

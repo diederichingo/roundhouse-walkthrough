@@ -239,13 +239,13 @@ export function furnishInterior(ctx) {
 
   // ——— Kitchen figure: woman ~60, 1.80 m, slim, white hair, red dress ———
   // At the hob under window 15, facing north toward the straight kitchen wall.
-  const kX = -0.55, kZ = -3.75;
+  const kX = -1.20, kZ = -4.25; // west of the hob box / peninsula (rev k), facing east to the hob
   const kFig = addWoman(houseGroup, mats, {
     height: 1.80, skin: mats.skinA, hair: mats.hairWhite, cloth: mats.red, shoe: mats.shoeDark,
     slim: true, age: 60, hairStyle: 'bob'
   });
   kFig.position.set(kX, 0, kZ);
-  kFig.rotation.y = Math.PI; // face −Z (north) toward the hob and window 15
+  kFig.rotation.y = Math.PI / 2; // face +X (east) toward the hob
   kFig.userData.role = 'kitchen-person';
   addHud('1.80 m', kX - 0.15, 1.86, kZ + 0.15, ['heights', 'kitchen-person']);
 
@@ -305,7 +305,7 @@ export const VIEW_CAMS = {
   },
   'kitchen-peninsula': {
     label: 'Kitchen peninsula',
-    cam: { x: 2.9, y: 2.3, z: -1.0, tx: 0.2, ty: 0.9, tz: -3.9 }
+    cam: { x: 1.9, y: 2.2, z: -1.0, tx: -0.45, ty: 0.9, tz: -3.8 }
   },
   'inner-wall': {
     label: 'Inner wall and partitions',

@@ -1,13 +1,13 @@
 /**
- * Els's roundhouse, Penamacor — Option B walkthrough v1y. Rev j2 + Tom's 28 Nov sketch (ASSUMED): attached shed, kitchen peninsula, 75 cm overhang, +20 cm, vents.
+ * Els's roundhouse, Penamacor — Option B walkthrough v1z. Rev 2026-11-28k: attached shed, kitchen peninsula, 750 mm overhang from the post line, +200 mm, vents, taps.
  * Static three.js site. Dimensions from the B-sheets / geometry.json.
  * Not for construction.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1y';
+import { furnishInterior, furnishingLabels, VIEW_CAMS } from './furnishings.js?v=1z';
 
-const APP_VERSION = '1y';
+const APP_VERSION = '1z';
 const canvas = document.getElementById('c');
 const loading = document.getElementById('loading');
 
@@ -18,17 +18,16 @@ const mm = (v) => v * 0.001;
  *  foundations and the utility top plate are not raised. Final figure from the
  *  Roundhouse bot, 25 Nov 2026, synced to geometry_report_B.txt. */
 const ROOF_RAISE = 0.400; // v1y: rev j2 +200, plus Tom's further +200 (ASSUMED)
-// v1y plan (Tom 28 Nov sketch, all ASSUMED until Roundhouse updates the plan):
-// 750 mm overhang from the OUTSIDE wall face (rOut 5.125) on S, W and N → edge ±5.875 / x −5.875;
-// east 750 mm past the outer face of the x = +9.00 extension posts → x +9.850.
-const EAVE_EDGE = 5.875;               // fascia / eave purlin outer face (|y|)
-const EAVE_CL = EAVE_EDGE - 0.075;     // 150 mm eave purlin centreline 5.800
-const END_POST_Y = EAVE_CL - 0.125;    // 5.675: end posts keep the 200 mm beam overhang past the post CL
-const SHED = { yS: -2.590, yN: -0.025, xE: 9.000, doorY0: -1.180, doorY1: -0.300, plateTop: 2.850 };
-// v1y shed ceiling/insulation extent (interior faces of N/S/E walls; west end tucks under the house roof).
+// v1z = rev 2026-11-28k: overhang 750 mm from the in-wall post line (S/W/N), east 750 mm past the x = +9 posts.
+// Roof 15.5 × 11.5 m: eaves y = ±5.750, west x = −5.750, east x = +9.750. End posts at y = ±5.550 (200 mm of beam past the post).
+const EAVE_EDGE = 5.750;               // fascia / eave purlin outer face (|y|)
+const EAVE_CL = EAVE_EDGE - 0.075;     // 150 mm eave purlin centreline 5.675
+const END_POST_Y = EAVE_CL - 0.125;    // 5.550: end posts keep the 200 mm beam overhang past the post CL
+const SHED = { yS: -2.550, yN: 0, xE: 9.000, doorY0: -1.180, doorY1: -0.300, plateTop: 2.850 };
+// shed ceiling/insulation extent (interior faces of N/S/E walls; west end tucks under the house roof).
 const uCeilX0 = 4.45, uCeilX1 = SHED.xE - 0.100, uCeilZ0 = -SHED.yN + 0.125, uCeilZ1 = -SHED.yS - 0.125;
 function applyV1yPlan(G) {
-  G.roof = { x0: -EAVE_EDGE * 1000, x1: 9850, y0: -EAVE_EDGE * 1000, y1: EAVE_EDGE * 1000 };
+  G.roof = { x0: -EAVE_EDGE * 1000, x1: 9750, y0: -EAVE_EDGE * 1000, y1: EAVE_EDGE * 1000 };
   G.purlin.ys = G.purlin.ys.map((y) => (Math.abs(y) > 6000 ? Math.sign(y) * EAVE_CL * 1000 : y));
   const moveEnd = (p) => { if (Math.abs(p.y) > 5900) p.y = Math.sign(p.y) * END_POST_Y * 1000; };
   G.posts.forEach(moveEnd);
@@ -45,17 +44,21 @@ function applyV1yPlan(G) {
     door_height: 2100, door_head: 2140, door_y0: SHED.doorY0 * 1000, door_y1: SHED.doorY1 * 1000,
     backDoorClearanceMm: null
   });
-  G.utilPosts = [{ name: 'SE-shed', x: 9000, y: SHED.yS * 1000, base: 100, top: 2330, length: 2230, kind: 'utility' }];
+  G.utilPosts = [
+    { name: 'SW-shed', x: 4600, y: SHED.yS * 1000, base: 100, top: 2330, length: 2230, kind: 'utility' },
+    { name: 'SE-shed', x: 9000, y: SHED.yS * 1000, base: 100, top: 2330, length: 2230, kind: 'utility' }
+  ];
   // Vents (ASSUMED positions). Low ~500 above the slab; high in the round wall above the head plate.
+  // Rev k bays: LV-B bay 3 (300 pier), LV-K bay 16, LV-L1/L2 bay 26; HV-S bay 26, HV-W bay 22, HV-E bay 13. Low at 500.
   G.vents = [
-    { tag: 'VL1', bay: 3, th: 35.08, aff: 500, kind: 'low inlet', room: 'bathroom' },
-    { tag: 'VL2', bay: 16, th: 195.45, aff: 500, kind: 'low inlet', room: 'living' },
-    { tag: 'VL3', bay: 9, th: 92.4, aff: 250, kind: 'low inlet', room: 'living (panel under the back-door side light)' },
-    { tag: 'VL4', bay: 13, th: 159.8, aff: 500, kind: 'low inlet', room: 'next to the kitchen' },
-    { tag: 'VH1', bay: 2, th: 24.0, aff: 2850, kind: 'high vent', room: 'bed area' },
-    { tag: 'VH2', bay: 11, th: 131.0, aff: 2850, kind: 'high vent', room: 'living / dining' },
-    { tag: 'VH3', bay: 22, th: 294.0, aff: 2850, kind: 'high vent', room: 'living, west' },
-    { tag: 'F1', bay: 5, th: 52.2, aff: 2700, kind: 'shower fan / lined vent', room: 'bathroom (moved from bay 8, now inside the shed)' }
+    { tag: 'LV-B', bay: 3, th: 35.08, aff: 500, kind: 'low inlet', room: 'bathroom (300 mm pier)' },
+    { tag: 'LV-K', bay: 16, th: 195.45, aff: 500, kind: 'low inlet', room: 'next to the kitchen (300 mm piece)' },
+    { tag: 'LV-L1', bay: 26, th: 351.9, aff: 500, kind: 'low inlet', room: 'living, bay 26' },
+    { tag: 'LV-L2', bay: 26, th: 357.1, aff: 500, kind: 'low inlet', room: 'living, bay 26' },
+    { tag: 'HV-S', bay: 26, th: 354.5, aff: 2850, kind: 'high vent', room: 'bay 26 (stack vent, height ASSUMED)' },
+    { tag: 'HV-W', bay: 22, th: 294.15, aff: 2850, kind: 'high vent', room: 'living, west (height ASSUMED)' },
+    { tag: 'HV-E', bay: 13, th: 161.2, aff: 2850, kind: 'high vent', room: 'kitchen side (height ASSUMED)' },
+    { tag: 'F1', bay: 5, th: 52.2, aff: 2700, kind: 'shower fan / lined vent', room: 'bathroom (rev k: bay 8, now inside the shed, so moved; FLAG)' }
   ];
 }
 const LAT = 40.17;
@@ -1779,8 +1782,9 @@ function buildModel() {
     g.userData.tap = name;
     houseGroup.add(g);
   }
-  addTap(7.20, 0.55, uZSouth + uHalf, 0, 1, 'shed south tap');
-  { const th = 157.5 * DEG; addTap(rOut * Math.sin(th), 0.55, rOut * Math.cos(th), Math.sin(th), Math.cos(th), 'kitchen tap'); }
+  // T1 (rev k): shed east wall, south of the door, 600 high. T2: west garden-door side, bay 21 south of the doors, 600 high.
+  addTap(ux1 + uHalf, 0.60, 1.75, 1, 0, 'T1 shed east tap');
+  { const th = 276.0 * DEG; addTap(rOut * Math.sin(th), 0.60, rOut * Math.cos(th), Math.sin(th), Math.cos(th), 'T2 west garden tap'); }
   // Shed door: in the east wall, hinge north jamb, opens out (east).
   const uFrame = new THREE.Group();
   uFrame.position.set(ux1, 0, dZ0 + 0.040);
@@ -2433,32 +2437,25 @@ function buildModel() {
       });
     })();
 
-    // --- v1y kitchen (ASSUMED): peninsula counter 900 × 2 400, short end against the straight
-    // N wall; gas hob on a 600 × 600 base unit against the N wall under window 15. 900 high. ---
+    // --- Rev k kitchen: hob box at the straight N wall beside the N post, long granite counter 650 wide runs
+    // south 2 400 from the wall (length ASSUMED, CHECK). Only the short end touches the wall. 900 high. ---
     const COUNTER_H = 0.900;
-    const PEN_W = 0.900, PEN_L = 2.400, PEN_X0 = 0.300;
-    const pX0 = PEN_X0, pX1 = PEN_X0 + PEN_W, pZ0 = wallZ, pZ1 = wallZ + PEN_L;
+    const PEN_W = 0.650, PEN_L = 2.400, PEN_X1 = -0.120; // 20 mm off the N post (post face x = −0.100)
+    const pX0 = PEN_X1 - PEN_W, pX1 = PEN_X1, pZ0 = wallZ, pZ1 = wallZ + PEN_L;
     const carcass = addBox(houseGroup, PEN_W, 0.850, PEN_L, materials.timber, (pX0 + pX1) / 2, 0.425, (pZ0 + pZ1) / 2);
     tagLayer(carcass, 'furniture');
     const top = addBox(houseGroup, PEN_W + 0.04, 0.050, PEN_L + 0.02, materials.white, (pX0 + pX1) / 2, 0.875, (pZ0 + pZ1) / 2 + 0.01);
     tagLayer(top, 'furniture');
     colliders.push({ type: 'aabb', x0: pX0, x1: pX1, z0: pZ0, z1: pZ1 });
-    const hobX = R * Math.sin(186.344 * DEG); // window 15 mid
-    const baseW = 0.600, baseD = 0.600, cZ1 = wallZ + baseD;
-    const base = addBox(houseGroup, baseW, 0.850, baseD, materials.timber, hobX, 0.425, (wallZ + cZ1) / 2);
-    tagLayer(base, 'furniture');
-    const btop = addBox(houseGroup, baseW + 0.02, 0.050, baseD + 0.02, materials.white, hobX, 0.875, (wallZ + cZ1) / 2);
-    tagLayer(btop, 'furniture');
-    colliders.push({ type: 'aabb', x0: hobX - baseW / 2, x1: hobX + baseW / 2, z0: wallZ, z1: cZ1 });
-    const hobW = 0.600, hobD = 0.520; // ASSUMED
-    const hob = addBox(houseGroup, hobW, 0.040, hobD, materials.metal, hobX, 0.910, (wallZ + cZ1) / 2);
+    const hobX = (pX0 + pX1) / 2, cZ1 = wallZ + 0.650;
+    const baseW = PEN_W, hobW = 0.600, hobD = 0.520; // ASSUMED
+    const hob = addBox(houseGroup, hobW, 0.040, hobD, materials.metal, hobX, 0.910, wallZ + 0.330);
     tagLayer(hob, 'furniture');
     out.counterBox = { x0: pX0, x1: pX1, z0: pZ0, z1: pZ1 };
     out.worktops = [
       { name: 'counter', ...out.counterBox, top: COUNTER_H },
-      { name: 'hob base', x0: hobX - baseW / 2, x1: hobX + baseW / 2, z0: wallZ, z1: cZ1, top: COUNTER_H },
       { name: 'hob', x0: hobX - hobW / 2, x1: hobX + hobW / 2,
-        z0: (wallZ + cZ1) / 2 - hobD / 2, z1: (wallZ + cZ1) / 2 + hobD / 2, top: 0.930 }
+        z0: wallZ + 0.330 - hobD / 2, z1: wallZ + 0.330 + hobD / 2, top: 0.930 }
     ];
 
     // --- Item 6: high window, two top-hung outward sashes ---
@@ -3026,8 +3023,8 @@ function buildModel() {
       const sof = tngSoffitFFL(-bp.z);
       figures.push({ who: 'bathroom 1.70 m', soffit: sof, gap: sof - bp.height });
     }
-    const utilS = tngSoffitFFL(-2.600);
-    const utilN = tngSoffitFFL(-0.600);
+    const utilS = tngSoffitFFL(-2.550);
+    const utilN = tngSoffitFFL(0.000);
     const collaredKeys = new Set(braceHeads.map((h) => h.post + ':' + h.side));
     braceHits.forEach((h) => {
       if (h.dir === 'E-W' && collaredKeys.has(h.post + ':' + h.side)) {
